@@ -1,0 +1,74 @@
+
+https://spdk.io/doc/nvmf_tgt_tracepoints.html
+https://github.com/spdk/spdk/tree/master/app/trace
+https://github.com/spdk/spdk/tree/master/app/trace_record
+
+$ build/bin/spdk_trace
+One of -f and -s must be specified
+usage:
+   build/bin/spdk_trace <option> <lcore#>
+                 '-c' to display single lcore history
+                 '-t' to display TSC offset for each event
+                 '-s' to specify spdk_trace shm name for a
+                      currently running process
+                 '-i' to specify the shared memory ID
+                 '-p' to specify the trace PID
+                      (If -s is specified, then one of
+                       -i or -p must be specified)
+                 '-f' to specify a tracepoint file name
+                      (-s and -f are mutually exclusive)
+                 '-j' to use JSON to format the output
+
+$ build/bin/spdk_trace_record -h
+build/bin/spdk_trace_record is used to record all SPDK generated trace entries
+from SPDK trace shared-memory to specified file.
+
+usage:
+   build/bin/spdk_trace_record <option>
+        option = '-q' to disable verbose mode
+                 '-s' to specify spdk_trace shm name for a
+                      currently running process
+                 '-i' to specify the shared memory ID
+                 '-p' to specify the trace PID
+                      (one of -i or -p must be specified)
+                 '-f' to specify output trace file name
+                 '-h' to print usage information
+
+
+# Tracepoint group mask for spdk trace buffers:
+#   default 0x0, bdev 0x8, nvmf_rdma 0x10, nvmf_tcp 0x20, blobfs 0x80, thread 0x400, nvme_pcie 0x800, all 0xffff
+$ build/bin/spdk_tgt -e 0xFFFF
+......
+app.c: 389:app_setup_trace: *NOTICE*: Tracepoint Group Mask 0xFFFF specified.
+app.c: 393:app_setup_trace: *NOTICE*: Use 'spdk_trace -s spdk_tgt -p 16253' to capture a snapshot of events at runtime.
+app.c: 395:app_setup_trace: *NOTICE*: Or copy /dev/shm/spdk_tgt_trace.pid16253 for offline analysis/debug.
+......
+$ ps -ef | grep spdk_tgt
+root     16253 16024 99 21:20 pts/1    00:14:20 build/bin/spdk_tgt -e 0xFFFF
+$ ls /dev/shm                                       # Traces are saved in circular buffer in shared memory
+spdk_tgt_trace.pid14996  spdk_tgt_trace.pid16253    # This can be compressed and transferred off the node for offline analysis
+# Create subsystem with two namespaces and NVMeoF RDMA transport
+# Run IOs from a client to generate events:
+#  spdk/build/examples/perf -q 128 -o 4096 -w randread -r 'trtype:RDMA adrfam:IPv4 traddr:1.2.3.4 trsvcid:4420' -t 300
+# Analyze the tracepoints on NVMeoF target
+$ build/bin/spdk_trace -s spdk_tgt -p 16253 | grep 2128    # traces for IO with ID of 2128
+ 0:   3141.533     RDMA_REQ_NEW                          id:    r2128            qpair: 0x5630ac05e7d0   
+ 0:   3141.566     RDMA_REQ_NEED_BUFFER                  id:    r2128            time:  0.034            qpair: 0x5630ac05e7d0   
+ 0:   3141.698     RDMA_REQ_RDY_TO_EXECUTE               id:    r2128            time:  0.165            qpair: 0x5630ac05e7d0   
+ 0:   3141.764 b00 BDEV_IO_START                         id:    i2128            type:  1                
+ 0:   3141.842 q01 NVME_PCIE_SUBMIT                      id:    p2128            cid:   145              opc:   2                dw10:  0x661fb710       dw11:  0x0              dw12:  0x7 
+ 0:   3141.927     RDMA_REQ_EXECUTING                    id:    r2128            time:  0.394            qpair: 0x5630ac05e7d0   
+ 0:   3245.852 q01 NVME_PCIE_COMPLETE                    id:    p2128            time:  104.010          cid:   145              
+ 0:   3245.885 b00 BDEV_IO_DONE                          id:    i2128            time:  104.121          
+ 0:   3245.930     RDMA_REQ_EXECUTED                     id:    r2128            time:  104.397          qpair: 0x5630ac05e7d0   
+ 0:   3245.958     RDMA_REQ_TX_PENDING_C2H               id:    r2128            time:  104.425          qpair: 0x5630ac05e7d0   
+ 0:   3245.984     RDMA_REQ_RDY_TO_COMPL                 id:    r2128            time:  104.451          qpair: 0x5630ac05e7d0   
+ 0:   3246.019     RDMA_REQ_COMPLETING_C2H               id:    r2128            time:  104.486          qpair: 0x5630ac05e7d0   
+ 0:   3547.595     RDMA_REQ_COMPLETED                    id:    r2128            time:  406.063          qpair: 0x5630ac05e7d0   
+$ build/bin/spdk_trace -f /dev/shm/spdk_tgt_trace.pid16253 | grep 2128      # Give ths same results unless traces have wrapped
+
+# spdk_trace_record is used to poll the spdk tracepoint shared memory, record new entries from it,
+# and store all entries into specified output file at its shutdown on SIGINT or SIGTERM
+$ build/bin/spdk_trace_record -q -s spdk_tgt -p 16253 -f /tmp/spdk_new_traces.trace  # trigger events, Ctrl+C to exit
+$ build/bin/spdk_trace -f /tmp/spdk_new_traces.trace                                 # see the traces
+

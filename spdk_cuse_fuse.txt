@@ -1,0 +1,197 @@
+
+https://spdk.io/doc/bdev.html    NVMe bdev character device
+
+====
+
+$ scripts/rpc.py bdev_nvme_cuse_register -h
+usage: rpc.py [options] bdev_nvme_cuse_register [-h] -n NAME
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -n NAME, --name NAME  Name of the NVMe controller. Example: Nvme0
+
+$ scripts/rpc.py bdev_nvme_cuse_unregister -h
+usage: rpc.py [options] bdev_nvme_cuse_unregister [-h] -n NAME
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -n NAME, --name NAME  Name of the NVMe controller. Example: Nvme0
+
+$ scripts/rpc.py bdev_lvol_create_lvstore -h
+usage: rpc.py [options] bdev_lvol_create_lvstore [-h] [-c CLUSTER_SZ] [--clear-method CLEAR_METHOD] bdev_name lvs_name
+
+positional arguments:
+  bdev_name             base bdev name
+  lvs_name              name for lvol store
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -c CLUSTER_SZ, --cluster-sz CLUSTER_SZ
+                        size of cluster (in bytes)
+  --clear-method CLEAR_METHOD
+                        Change clear method for data region. Available: none, unmap, write_zeroes
+
+$ scripts/rpc.py bdev_lvol_delete_lvstore -h
+usage: rpc.py [options] bdev_lvol_delete_lvstore [-h] [-u UUID] [-l LVS_NAME]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -u UUID, --uuid UUID  lvol store UUID
+  -l LVS_NAME, --lvs-name LVS_NAME
+                        lvol store name
+
+$ scripts/rpc.py bdev_lvol_create -h
+usage: rpc.py [options] bdev_lvol_create [-h] [-u UUID] [-l LVS_NAME] [-t] [-c CLEAR_METHOD] lvol_name size
+
+positional arguments:
+  lvol_name             name for this lvol
+  size                  size in MiB for this bdev
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -u UUID, --uuid UUID  lvol store UUID
+  -l LVS_NAME, --lvs-name LVS_NAME
+                        lvol store name
+  -t, --thin-provision  create lvol bdev as thin provisioned
+  -c CLEAR_METHOD, --clear-method CLEAR_METHOD
+                        Change default data clusters clear method. Available: none, unmap, write_zeroes
+
+$ scripts/rpc.py bdev_lvol_delete -h
+usage: rpc.py [options] bdev_lvol_delete [-h] name
+
+positional arguments:
+  name        lvol bdev name
+
+optional arguments:
+  -h, --help  show this help message and exit
+
+
+
+==== SPDK NVMe-CUSE device 
+CUSE: Character devices in Userspace
+FUSE: Userspace filesystem
+
+# Enable cuse support for NVMe
+scripts/pkgdep.sh --fuse
+./configure --with-nvme-cuse     # --with-fuse
+
+# Create NVMe-CUSE device
+scripts/setup.sh
+modprobe cuse
+build/bin/spdk_tgt
+scripts/rpc.py bdev_nvme_attach_controller -b my_nvme0 -a 0000:da:00.0 -t pcie
+scripts/rpc.py bdev_nvme_cuse_register -n my_nvme0
+ls /dev/spdk/
+scripts/rpc.py bdev_nvme_cuse_unregister -n my_nvme0
+
+# Ubuntu 20.4:
+# Run spdk_tgt to find out libraries to load
+# Run apt search to find out package name
+# Run apt install package_name
+$ build/bin/spdk_tgt
+error while loading shared libraries: libibverbs.so.1: cannot open shared object file: No such file or directory
+$ apt search  libibverbs
+Sorting... Done
+Full Text Search... Done
+ibverbs-providers/focal 28.0-1ubuntu1 amd64
+  User space provider drivers for libibverbs
+
+ibverbs-utils/focal 28.0-1ubuntu1 amd64
+  Examples for the libibverbs library
+
+libibverbs-dev/focal 28.0-1ubuntu1 amd64
+  Development files for the libibverbs library
+
+libibverbs1/focal 28.0-1ubuntu1 amd64
+  Library for direct userspace use of RDMA (InfiniBand/iWARP)
+
+librdmacm-dev/focal 28.0-1ubuntu1 amd64
+  Development files for the librdmacm library
+
+librdmacm1/focal 28.0-1ubuntu1 amd64
+  Library for managing RDMA connections
+
+rdmacm-utils/focal 28.0-1ubuntu1 amd64
+  Examples for the librdmacm library
+
+$ apt install libibverbs1
+
+# Similarly, install librdmacm1 and libfuse3-3
+$ apt search librdmacm
+Sorting... Done
+Full Text Search... Done
+ibacm/focal 28.0-1ubuntu1 amd64
+  InfiniBand Communication Manager Assistant (ACM)
+
+librdmacm-dev/focal 28.0-1ubuntu1 amd64
+  Development files for the librdmacm library
+
+librdmacm1/focal,now 28.0-1ubuntu1 amd64 [installed]
+  Library for managing RDMA connections
+
+rdmacm-utils/focal 28.0-1ubuntu1 amd64
+  Examples for the librdmacm library
+
+$ apt search libfuse
+Sorting... Done
+Full Text Search... Done
+golang-github-hanwen-go-fuse-dev/focal 0.0~git20190214.58dcd77-1 all
+  Native Go bindings for the FUSE kernel module
+
+libfuse-dev/focal 2.9.9-3 amd64
+  Filesystem in Userspace (development)
+
+libfuse-perl/focal 0.16.1+20180422git6becd92d7fce3fc411d7c-4build2 amd64
+  Perl bindings for FUSE (Filesystems in USErland
+
+libfuse2/focal,now 2.9.9-3 amd64 [installed,automatic]
+  Filesystem in Userspace (library)
+
+libfuse3-3/focal,now 3.9.0-2 amd64 [installed]
+  Filesystem in Userspace (library) (3.x version)
+
+libfuse3-dev/focal 3.9.0-2 amd64
+  Filesystem in Userspace (development) (3.x version)
+
+
+$ scripts/rpc.py bdev_nvme_attach_controller -b my_nvme0 -a 0000:da:00.0 -t pcie
+my_nvme0n1
+$ scripts/rpc.py bdev_nvme_cuse_register -n my_nvme0
+$ ls /dev/spdk
+nvme0  nvme0n1
+
+# messages
+nvme_cuse.c: 972:nvme_cuse_start: *NOTICE*: Creating cuse device for controller
+nvme_cuse.c: 763:cuse_session_create: *NOTICE*: fuse session for device spdk/nvme0 created
+nvme_cuse.c: 763:cuse_session_create: *NOTICE*: fuse session for device spdk/nvme0n1 created
+
+$ sudo scripts/iostat.py
+cpu_stat:  user_stat  nice_stat  system_stat  iowait_stat  steal_stat  idle_stat
+           0.15%      0.00%      0.01%        0.00%        0.00%       99.83%   
+
+Device      tps   KB_read/s  KB_wrtn/s  KB_dscd/s  KB_read  KB_wrtn  KB_dscd
+my_nvme0n1  0.00  0.00       0.00       0.00       36.00    0.00     0.00   
+
+
+$ scripts/rpc.py bdev_lvol_create_lvstore my_nvme0n1 my_lvs0 -c 8192
+
+$ scripts/rpc.py bdev_lvol_get_lvstores
+scripts/rpc.py bdev_lvol_get_lvstores
+[
+  {
+    "uuid": "85f334e1-0281-4557-b33c-ca0affaada48",
+    "name": "my_lvs0",
+    "base_bdev": "my_nvme0n1",
+    "total_data_clusters": 58600414,
+    "free_clusters": 58600414,
+    "block_size": 512,
+    "cluster_size": 8192
+  }
+]
+
+# scripts/rpc.py bdev_lvol_delete_lvstore -l my_lvs0
+
+$ scripts/rpc.py bdev_lvol_create my_lvol1 25 -l my_lvs0       # 25 MiB
+50e56e7d-8f6e-47fa-abf5-16d7c7dcbfe0
+
+

@@ -1,0 +1,350 @@
+
+https://spdk.io/doc/iscsi.html
+
+==== JSON RPC for configuring iSCSI target
+
+== Portal groups
+iscsi_create_portal_group – Add a portal group.
+iscsi_delete_portal_group – Delete an existing portal group.
+iscsi_target_node_add_pg_ig_maps – Add initiator group to portal group mappings to an existing iSCSI target node.
+iscsi_target_node_remove_pg_ig_maps – Delete initiator group to portal group mappings from an existing iSCSI target node.
+iscsi_get_portal_groups – Show information about all available portal groups.
+
+== Initiator groups
+iscsi_create_initiator_group – Add an initiator group.
+iscsi_delete_initiator_group – Delete an existing initiator group.
+iscsi_initiator_group_add_initiators – Add initiators to an existing initiator group.
+iscsi_get_initiator_groups – Show information about all available initiator groups.
+
+== Target nodes
+iscsi_create_target_node – Add an iSCSI target node.
+iscsi_delete_target_node – Delete an iSCSI target node.
+iscsi_target_node_add_lun – Add a LUN to an existing iSCSI target node.
+iscsi_get_target_nodes – Show information about all available iSCSI target nodes.
+
+
+$ scripts/rpc.py iscsi_create_portal_group -h
+usage: rpc.py [options] iscsi_create_portal_group [-h] [-p] [-w]
+                                                  tag portal_list
+
+positional arguments:
+  tag            Portal group tag (unique, integer > 0)
+  portal_list    List of portals in host:port format, separated by whitespace
+                 Example: '192.168.100.100:3260 192.168.100.100:3261
+                 192.168.100.100:3262
+
+optional arguments:
+  -h, --help     show this help message and exit
+  -p, --private  Public (false) or private (true) portal group. Private portal
+                 groups do not have their portals returned by a discovery
+                 session. A public portal group may optionally specify a
+                 redirect portal for non-discovery logins. This redirect
+                 portal must be from a private portal group.
+  -w, --wait     Do not listening on portals until it is started explicitly.
+                 One major iSCSI initiator may not retry login once it failed.
+                 Hence for such initiator, listening on portals should be
+                 allowed after all associated target nodes are created.
+
+$ scripts/rpc.py iscsi_create_initiator_group -h
+usage: rpc.py [options] iscsi_create_initiator_group [-h]
+                                                     tag initiator_list
+                                                     netmask_list
+
+positional arguments:
+  tag             Initiator group tag (unique, integer > 0)
+  initiator_list  Whitespace-separated list of initiator hostnames or IP
+                  addresses, enclosed in quotes. Example: 'ANY' or '127.0.0.1
+                  192.168.200.100'
+  netmask_list    Whitespace-separated list of initiator netmasks enclosed in
+                  quotes. Example: '255.255.0.0 255.248.0.0' etc
+
+optional arguments:
+  -h, --help      show this help message and exit
+
+$ scripts/rpc.py iscsi_create_target_node -h
+usage: rpc.py [options] iscsi_create_target_node [-h] [-g CHAP_GROUP] [-d]
+                                                 [-r] [-m] [-H] [-D]
+                                                 name alias_name
+                                                 bdev_name_id_pairs
+                                                 pg_ig_mappings queue_depth
+
+positional arguments:
+  name                  Target node name (ASCII)
+  alias_name            Target node alias name (ASCII)
+  bdev_name_id_pairs    Whitespace-separated list of <bdev name:LUN ID> pairs
+                        enclosed in quotes. Format: 'bdev_name0:id0
+                        bdev_name1:id1' etc Example: 'Malloc0:0 Malloc1:1
+                        Malloc5:2' *** The bdevs must pre-exist *** *** LUN0
+                        (id = 0) is required *** *** bdevs names cannot
+                        contain space or colon characters ***
+  pg_ig_mappings        List of (Portal_Group_Tag:Initiator_Group_Tag)
+                        mappings Whitespace separated, quoted, mapping defined
+                        with colon separated list of "tags" (int > 0) Example:
+                        '1:1 2:2 2:1' *** The Portal/Initiator Groups must be
+                        precreated ***
+  queue_depth           Desired target queue depth
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -g CHAP_GROUP, --chap-group CHAP_GROUP
+                        Authentication group ID for this target node. ***
+                        Authentication group must be precreated ***
+  -d, --disable-chap    CHAP authentication should be disabled for this target
+                        node. *** Mutually exclusive with --require-chap ***
+  -r, --require-chap    CHAP authentication should be required for this target
+                        node. *** Mutually exclusive with --disable-chap ***
+  -m, --mutual-chap     CHAP authentication should be mutual/bidirectional.
+  -H, --header-digest   Header Digest should be required for this target node.
+  -D, --data-digest     Data Digest should be required for this target node.
+
+==== Configure SPDK iSCSI target
+
+$ firewall-cmd --add-port=3260/tcp --permanent
+$ firewall-cmd --reload
+
+$ cd ~/spdk/
+
+$ build/bin/spdk_tgt &          #  ./spdk_tgt -c ~/config.json -L nvme -L bdev -L bdev_nvme -L log -L log_rpc &
+
+$ scripts/rpc.py iscsi_create_portal_group 1 10.194.192.201:3260        # Find RNIC IP:  ip a
+$ scripts/rpc.py iscsi_get_portal_groups
+[
+  {
+    "tag": 1,
+    "portals": [
+      {
+        "host": "10.194.192.201",
+        "port": "3260"
+      }
+    ],
+    "private": false
+  }
+]
+$ scripts/rpc.py iscsi_create_initiator_group 2 ANY 10.194.192.0/20
+$ scripts/rpc.py iscsi_get_initiator_groups
+[
+  {
+    "tag": 2,
+    "initiators": [
+      "ANY"
+    ],
+    "netmasks": [
+      "10.194.192.0/20"
+    ]
+  }
+]
+
+# Create bdevs
+# scripts/rpc.py bdev_nvme_attach_controller -b my_nvme0 -a 0000:8c:00.0 -t pcie
+# scripts/rpc.py bdev_nvme_attach_controller -b my_nvme1 -a 0000:18:00.0 -t pcie
+# scripts/rpc.py bdev_nvme_get_controllers
+# scripts/rpc.py bdev_get_bdevs
+
+$ scripts/rpc.py iscsi_create_target_node mydisk1 "Data Disk 1" "my_nvme0n1:0 my_nvme1n1:1" 1:2 64 -d
+$ scripts/rpc.py iscsi_get_target_nodes
+[
+  {
+    "name": "iqn.2016-06.io.spdk:mydisk1",
+    "alias_name": "Data Disk 1",
+    "pg_ig_maps": [
+      {
+        "pg_tag": 1,
+        "ig_tag": 2
+      }
+    ],
+    "luns": [
+      {
+        "bdev_name": "my_nvme0n1",
+        "lun_id": 0
+      },
+      {
+        "bdev_name": "my_nvme1n1",
+        "lun_id": 1
+      }
+    ],
+    "queue_depth": 64,
+    "disable_chap": true,
+    "require_chap": false,
+    "mutual_chap": false,
+    "chap_group": 0,
+    "header_digest": false,
+    "data_digest": false
+  }
+]
+
+# Save the config so it can be loaded later
+$ scripts/rpc.py save_config > ~/config_iscsi.json
+
+==== Configure iSCSI initiator
+
+Installing open-iscsi package: apt-get install -y open-iscsi
+
+$ systemctl status iscsi
+$ systemctl status iscsid
+$ cat /etc/iscsi/initiatorname.iscsi
+$ iscsiadm -h
+iscsiadm -m discoverydb [ -hV ] [ -d debug_level ] [-P printlevel] [ -t type -p ip:port -I ifaceN ... [ -Dl ] ] | [ [ -p ip:port -t type] [ -o operation ] [ -n name ] [ -v value ] [ -lD ] ] 
+iscsiadm -m discovery [ -hV ] [ -d debug_level ] [-P printlevel] [ -t type -p ip:port -I ifaceN ... [ -l ] ] | [ [ -p ip:port ] [ -l | -D ] ] 
+iscsiadm -m node [ -hV ] [ -d debug_level ] [ -P printlevel ] [ -L all,manual,automatic ] [ -U all,manual,automatic ] [ -S ] [ [ -T targetname -p ip:port -I ifaceN ] [ -l | -u | -R | -s] ] [ [ -o  operation  ] [ -n name ] [ -v value ] ]
+iscsiadm -m session [ -hV ] [ -d debug_level ] [ -P  printlevel] [ -r sessionid | sysfsdir [ -R | -u | -s ] [ -o operation ] [ -n name ] [ -v value ] ]
+iscsiadm -m iface [ -hV ] [ -d debug_level ] [ -P printlevel ] [ -I ifacename | -H hostno|MAC ] [ [ -o  operation  ] [ -n name ] [ -v value ] ] [ -C ping [ -a ip ] [ -b packetsize ] [ -c count ] [ -i interval ] ]
+iscsiadm -m fw [ -d debug_level ] [ -l ]
+iscsiadm -m host [ -P printlevel ] [ -H hostno|MAC ] [ [ -C chap [ -x chap_tbl_idx ] ] | [ -C flashnode [ -A portal_type ] [ -x flashnode_idx ] ] | [ -C stats ] ] [ [ -o operation ] [ -n name ] [ -v value ] ] 
+iscsiadm -k priority
+
+== Setup
+# Edit /etc/iscsi/iscsid.conf
+node.session.cmds_max = 4096
+node.session.queue_depth = 128
+
+# iscsid must be restarted or receive SIGHUP for changes to take effect. To send SIGHUP, run:
+killall -HUP iscsid
+
+# Recommended changes to /etc/sysctl.conf
+net.ipv4.tcp_timestamps = 1
+net.ipv4.tcp_sack = 0
+net.ipv4.tcp_rmem = 10000000 10000000 10000000
+net.ipv4.tcp_wmem = 10000000 10000000 10000000
+net.ipv4.tcp_mem = 10000000 10000000 10000000
+net.core.rmem_default = 524287
+net.core.wmem_default = 524287
+net.core.rmem_max = 524287
+net.core.wmem_max = 524287
+net.core.optmem_max = 524287
+net.core.netdev_max_backlog = 300000
+
+== Discovery
+# Initiator IP: 10.194.194.38, on the same subnet as iSCSI target 10.194.192.0/20
+$ cat /etc/iscsi/initiatorname.iscsi
+## DO NOT EDIT OR REMOVE THIS FILE!
+## If you remove this file, the iSCSI daemon will not start.
+## If you change the InitiatorName, existing access control lists
+## may reject this initiator.  The InitiatorName must be unique
+## for each iSCSI initiator.  Do NOT duplicate iSCSI InitiatorNames.
+InitiatorName=iqn.1993-08.org.debian:01:242cd7d67839
+$ iscsiadm -m discovery -t sendtargets -p 10.194.192.201:3260
+10.194.192.201:3260,1 iqn.2016-06.io.spdk:mydisk1
+
+# Connect to target
+$ iscsiadm -m node --login
+Logging in to [iface: default, target: iqn.2016-06.io.spdk:mydisk1, portal: 10.194.192.201,3260] (multiple)
+Login to [iface: default, target: iqn.2016-06.io.spdk:mydisk1, portal: 10.194.192.201,3260] successful.
+$ lsblk
+......
+sdb        8:16   0 894.3G  0 disk 
+sdc        8:32   0 894.3G  0 disk 
+......
+$ dmesg
+......
+[2927797.316637] Loading iSCSI transport class v2.0-870.
+[2927797.319822] iscsi: registered transport (tcp)
+[2930081.407972] scsi host14: iSCSI Initiator over TCP/IP
+[2930081.415283] scsi 14:0:0:0: Direct-Access     INTEL    NVMe disk        0001 PQ: 0 ANSI: 5
+[2930081.415680] sd 14:0:0:0: Attached scsi generic sg1 type 0
+[2930081.416019] scsi 14:0:0:1: Direct-Access     INTEL    NVMe disk        0001 PQ: 0 ANSI: 5
+[2930081.416294] sd 14:0:0:0: [sdb] 1875385008 512-byte logical blocks: (960 GB/894 GiB)
+[2930081.416352] sd 14:0:0:1: Attached scsi generic sg2 type 0
+[2930081.416368] sd 14:0:0:0: [sdb] Write Protect is off
+[2930081.416370] sd 14:0:0:0: [sdb] Mode Sense: 83 00 00 08
+[2930081.416503] sd 14:0:0:0: [sdb] Write cache: disabled, read cache: disabled, doesn't support DPO or FUA
+[2930081.416685] sd 14:0:0:0: [sdb] Optimal transfer size 4194304 bytes
+[2930081.417132] sd 14:0:0:1: [sdc] 1875385008 512-byte logical blocks: (960 GB/894 GiB)
+[2930081.417226] sd 14:0:0:1: [sdc] Write Protect is off
+[2930081.417227] sd 14:0:0:1: [sdc] Mode Sense: 83 00 00 08
+[2930081.417382] sd 14:0:0:1: [sdc] Write cache: disabled, read cache: disabled, doesn't support DPO or FUA
+[2930081.417565] sd 14:0:0:1: [sdc] Optimal transfer size 4194304 bytes
+[2930081.419410] sd 14:0:0:0: [sdb] Attached SCSI disk
+[2930081.419925] sd 14:0:0:1: [sdc] Attached SCSI disk
+
+# /var/log/syslog entry
+iscsid: Connection1:0 to [target: iqn.2016-06.io.spdk:mydisk1, portal: 10.194.192.201,3260] through [iface: default] is operational now
+
+
+# Finding /dev/sdX nodes for iSCSI LUNs
+$ iscsiadm -m session -P 3 | grep "Attached scsi disk" | awk '{print $4}'
+sdb
+sdc
+$ iscsiadm -m session -P 3 
+iSCSI Transport Class version 2.0-870
+version 2.0-874
+Target: iqn.2016-06.io.spdk:mydisk1 (non-flash)
+	Current Portal: 10.194.192.201:3260,1
+	Persistent Portal: 10.194.192.201:3260,1
+		**********
+		Interface:
+		**********
+		Iface Name: default
+		Iface Transport: tcp
+		Iface Initiatorname: iqn.1993-08.org.debian:01:242cd7d67839
+		Iface IPaddress: 10.194.194.38
+		Iface HWaddress: <empty>
+		Iface Netdev: <empty>
+		SID: 1
+		iSCSI Connection State: LOGGED IN
+		iSCSI Session State: LOGGED_IN
+		Internal iscsid Session State: NO CHANGE
+		*********
+		Timeouts:
+		*********
+		Recovery Timeout: 120
+		Target Reset Timeout: 30
+		LUN Reset Timeout: 30
+		Abort Timeout: 15
+		*****
+		CHAP:
+		*****
+		username: <empty>
+		password: ********
+		username_in: <empty>
+		password_in: ********
+		************************
+		Negotiated iSCSI params:
+		************************
+		HeaderDigest: None
+		DataDigest: None
+		MaxRecvDataSegmentLength: 262144
+		MaxXmitDataSegmentLength: 65536
+		FirstBurstLength: 8192
+		MaxBurstLength: 1048576
+		ImmediateData: Yes
+		InitialR2T: Yes
+		MaxOutstandingR2T: 1
+		************************
+		Attached SCSI devices:
+		************************
+		Host Number: 14	State: running
+		scsi14 Channel 00 Id 0 Lun: 0
+			Attached scsi disk sdb		State: running
+		scsi14 Channel 00 Id 0 Lun: 1
+			Attached scsi disk sdc		State: running
+
+# Read from remote disk
+$ dd if=/dev/sdb bs=512 count=1000 of=/dev/null
+1000+0 records in
+1000+0 records out
+512000 bytes (512 kB, 500 KiB) copied, 0.00723735 s, 70.7 MB/s
+
+# Write to remote disk
+$ dd if=/dev/zero bs=512 count=1000 of=/dev/sdb
+1000+0 records in
+1000+0 records out
+512000 bytes (512 kB, 500 KiB) copied, 0.0246423 s, 20.8 MB/s
+
+# On iSCSI target, run the following to see IO stat: scripts/rpc.py bdev_get_iostat
+
+# Disconnect from target
+$ iscsiadm -m node --logout
+Logging out of session [sid: 1, target: iqn.2016-06.io.spdk:mydisk1, portal: 10.194.192.201,3260]
+Logout of [sid: 1, target: iqn.2016-06.io.spdk:mydisk1, portal: 10.194.192.201,3260] successful.
+
+$ lsblk
+......
+......
+
+# /var/log/syslog entry
+iscsid: Connection1:0 to [target: iqn.2016-06.io.spdk:mydisk1, portal: 10.194.192.201,3260] through [iface: default] is shutdown.
+
+# Deleting target node cache
+$ iscsiadm -m node -o delete
+# This will cause the initiator to forget all previously discovered iSCSI target nodes.
+

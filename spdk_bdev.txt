@@ -1,0 +1,148 @@
+
+
+https://spdk.io/doc/bdev.html
+https://spdk.io/doc/nvme.html
+
+==== Create Python virtual environment for running ~/spdk/scripts/spdkcli.py
+
+apt-get install virtualenv
+cd spdk
+mkdir venv
+virtualenv -p python3 ./venv
+source ./venv/bin/activate
+pip3 install configshell-fb
+
+==== Start SPDK app so ~/spdk/scripts/rpc.py can be used
+
+$ ~/spdk/build/bin# ./spdk_tgt
+
+==== Save config and reload config
+
+$ ~/spdk# scripts/rpc.py save_config > ~/config.json
+
+$ ~/spdk/build/bin# ./spdk_tgt -c ~/config.json -L nvme -L bdev              # -L log
+
+$ ~/spdk# scripts/rpc.py load_config -j ~/config.json
+
+==== Examine the SPDK subsystem
+
+$ ~/spdk#
+
+scripts/rpc.py spdk_get_version
+scripts/rpc.py rpc_get_methods
+
+scripts/rpc.py framework_get_config name_of_subsystem                         #
+scripts/rpc.py framework_get_subsystems
+scripts/rpc.py nvmf_get_transports                                            # nvmf_create_transport
+scripts/rpc.py nvmf_get_subsystems
+scripts/rpc.py nvmf_subsystem_get_controllers [-t TGT_NAME] subsystems_nqn    # nvmf_get_subsystems
+scripts/rpc.py nvmf_subsystem_get_qpairs [-t TGT_NAME] subsystems_nqn         # nvmf_get_subsystems
+scripts/rpc.py nvmf_subsystem_get_listeners [-t TGT_NAME] subsystems_nqn      # nvmf_get_subsystems
+
+scripts/rpc.py bdev_nvme_get_controllers
+scripts/rpc.py bdev_get_bdevs                                                 # bdev_nvme_attach_controller, bdev_set_options
+scripts/rpc.py bdev_raid_get_bdevs category_all_online_configuring_offline    #
+scripts/rpc.py bdev_lvol_get_lvstores
+
+# bdev 0x8, blobfs 0x80, thread 0x400, nvme_pcie 0x800, all 0xffff
+scripts/rpc.py trace_get_tpoint_group_mask                             # trace_disable_tpoint_group, trace_enable_tpoint_group
+# all, accel, accel_ioat, aio, app_config, app_rpc, bdev, bdev_ftl, bdev_malloc, bdev_null, bdev_nvme, bdev_raid, bdev_raid0, 
+# blob, blob_rw, blobfs, blobfs_bdev, blobfs_bdev_rpc, blobfs_rw, ftl_core, ftl_init, gpt_parse, ioat, json_util, log, log_rpc,
+# lvol, lvol_rpc, notify_rpc, nvme, opal, reactor, rpc, rpc_client, sock, thread, trace, vbdev_delay, vbdev_gpt, vbdev_lvol,
+# vbdev_opal, vbdev_passthru, vbdev_split, vbdev_zone_block, virtio, virtio_blk, virtio_dev, virtio_pci, virtio_user, vmd
+scripts/rpc.py log_get_flags                                           # log_set_flag, log_clear_flag
+scripts/rpc.py log_get_level                                           # log_set_level, default "NOTICE"
+scripts/rpc.py log_get_print_level                                     # log_set_print_level, default "INFO"
+
+scripts/rpc.py nvmf_get_stats
+scripts/rpc.py bdev_get_iostat
+scripts/rpc.py bdev_get_histogram bdev_name                            # bdev_get_bdevs, bdev_enable_histogram
+scripts/rpc.py bdev_nvme_get_transport_statistics
+scripts/rpc.py bdev_nvme_get_controller_health_info -c bdev_crtl_name  # bdev_nvme_get_controllers
+
+==== NVMe local/remote bdev
+
+~/spdk# scripts/rpc.py bdev_nvme_attach_controller --help
+usage: rpc.py [options] bdev_nvme_attach_controller [-h] -b NAME -t TRTYPE -a
+                                                    TRADDR [-f ADRFAM]
+                                                    [-s TRSVCID] [-p PRIORITY]
+                                                    [-n SUBNQN] [-q HOSTNQN]
+                                                    [-i HOSTADDR]
+                                                    [-c HOSTSVCID] [-r] [-g]
+                                                    [-e] [-d]
+                                                    [--fabrics-timeout FABRICS_TIMEOUT]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -b NAME, --name NAME  Name of the NVMe controller, prefix for each bdev name
+  -t TRTYPE, --trtype TRTYPE
+                        NVMe-oF target trtype: e.g., rdma, pcie
+  -a TRADDR, --traddr TRADDR
+                        NVMe-oF target address: e.g., an ip address or BDF
+  -f ADRFAM, --adrfam ADRFAM
+                        NVMe-oF target adrfam: e.g., ipv4, ipv6, ib, fc,
+                        intra_host
+  -s TRSVCID, --trsvcid TRSVCID
+                        NVMe-oF target trsvcid: e.g., a port number
+  -p PRIORITY, --priority PRIORITY
+                        NVMe-oF connection priority: e.g., a priority number
+  -n SUBNQN, --subnqn SUBNQN
+                        NVMe-oF target subnqn
+  -q HOSTNQN, --hostnqn HOSTNQN
+                        NVMe-oF host subnqn
+  -i HOSTADDR, --hostaddr HOSTADDR
+                        NVMe-oF host address: e.g., an ip address
+  -c HOSTSVCID, --hostsvcid HOSTSVCID
+                        NVMe-oF host svcid: e.g., a port number
+  -r, --prchk-reftag    Enable checking of PI reference tag for I/O
+                        processing.
+  -g, --prchk-guard     Enable checking of PI guard for I/O processing.
+  -e, --hdgst           Enable TCP header digest.
+  -d, --ddgst           Enable TCP data digest.
+  --fabrics-timeout FABRICS_TIMEOUT
+                        Fabrics connect timeout in microseconds
+
+# In case SPDK app is not started
+$ ~/spdk# scripts/rpc.py bdev_nvme_attach_controller -b my_nvme0 -a 0000:8c:00.0 -t pcie
+Error while connecting to /var/tmp/spdk.sock
+Is SPDK application running?
+Error details: Invalid or non-existing address: '/var/tmp/spdk.sock'
+
+# Start SPDK app and keep it running
+# nvme_controllers: e.g., my_nvme0, my_nvme1
+# nvme_bdevs: e.g., my_nvme0n1, my_nvme1n1 
+$ ~/spdk# scripts/rpc.py bdev_nvme_attach_controller -b my_nvme0 -a 0000:8c:00.0 -t pcie
+my_nvme0n1
+$ ~/spdk# scripts/rpc.py bdev_nvme_attach_controller -b my_nvme1 -a 0000:18:00.0 -t pcie
+my_nvme1n1
+$ ~/spdk# scripts/rpc.py bdev_nvme_get_controllers
+[
+  {
+    "name": "my_nvme0",
+    "trid": {
+      "trtype": "PCIe",
+      "traddr": "0000:8c:00.0"
+    },
+    "host": {
+      "nqn": "nqn.2014-08.org.nvmexpress:uuid:e6effd75-1e16-47a0-a779-deaa9b274958",
+      "addr": "",
+      "svcid": ""
+    }
+  },
+  {
+    "name": "my_nvme1",
+    "trid": {
+      "trtype": "PCIe",
+      "traddr": "0000:18:00.0"
+    },
+    "host": {
+      "nqn": "nqn.2014-08.org.nvmexpress:uuid:e6effd75-1e16-47a0-a779-deaa9b274958",
+      "addr": "",
+      "svcid": ""
+    }
+  }
+]
+$ ~/spdk# scripts/rpc.py bdev_get_bdevs                         # print the details of those two bdevs
+$ ~/spdk# scripts/rpc.py bdev_nvme_detach_controller my_nvme0
+
+

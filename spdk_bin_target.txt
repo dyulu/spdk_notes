@@ -1,0 +1,176 @@
+
+https://github.com/spdk/spdk/tree/master/app/nvmf_tgt
+https://spdk.io/doc/app_overview.html
+The major applications in SPDK are:
+  iSCSI Target
+  NVMe over Fabrics Target
+  vhost Target
+  SPDK Target (a unified application combining the above three)
+
+
+scripts/setup.sh help
+Helper script for allocating hugepages and binding NVMe, I/OAT, VMD and Virtio devices
+to a generic VFIO kernel driver. If VFIO is not available on the system, this script
+will fall back to UIO. NVMe and Virtio devices with active mountpoints will be ignored.
+All hugepage operations use default hugepage size on the system (hugepagesz).
+Usage: setup.sh [config|reset|status|cleanup|help]
+
+[config|reset|status|cleanup|help] - as following:
+config            Default mode. Allocate hugepages and bind PCI devices.
+cleanup           Remove any orphaned files that can be left in the system after SPDK application exit
+reset             Rebind PCI devices back to their original drivers.
+                  Also cleanup any leftover spdk files/resources.
+                  Hugepage memory size will remain unchanged.
+status            Print status of all SPDK-compatible devices on the system.
+help              Print this help message.
+
+The following environment variables can be specified.
+HUGEMEM           Size of hugepage memory to allocate (in MB). 2048 by default.
+                  For NUMA systems, the hugepages will be distributed on node0 by
+                  default.
+HUGE_EVEN_ALLOC   If set to 'yes', hugepages will be evenly distributed across all
+                  system's NUMA nodes (effectively ignoring anything set in HUGENODE).
+                  Uses kernel's default for hugepages size.
+NRHUGE            Number of hugepages to allocate. This variable overwrites HUGEMEM.
+HUGENODE          Specific NUMA node to allocate hugepages on. Multiple nodes can be
+                  separated with comas. By default, NRHUGE will be applied on each node.
+                  Hugepages can be defined per node with e.g.:
+                  HUGENODE='nodes_hp[0]=2048,nodes_hp[1]=512,2' - this will allocate
+                  2048 pages for node0, 512 for node1 and default NRHUGE for node2.
+HUGEPGSZ          Size of the hugepages to use in kB. If not set, kernel's default
+                  setting is used.
+CLEAR_HUGE        If set to 'yes', the attempt to remove hugepages from all nodes will
+                  be made prior to allocation.
+PCI_ALLOWED
+PCI_BLOCKED       Whitespace separated list of PCI devices (NVMe, I/OAT, VMD, Virtio).
+                  Each device must be specified as a full PCI address.
+                  E.g. PCI_ALLOWED="0000:01:00.0 0000:02:00.0"
+                  To block all PCI devices use a non-valid address.
+                  E.g. PCI_BLOCKED="none"
+                  If PCI_ALLOWED and PCI_BLOCKED are empty or unset, all PCI devices
+                  will be bound.
+                  Each device in PCI_BLOCKED will be ignored (driver won't be changed).
+                  PCI_BLOCKED has precedence over PCI_ALLOWED.
+TARGET_USER       User that will own hugepage mountpoint directory and vfio groups.
+                  By default the current user will be used.
+DRIVER_OVERRIDE   Disable automatic vfio-pci/uio_pci_generic selection and forcefully
+                  bind devices to the given driver.
+                  E.g. DRIVER_OVERRIDE=uio_pci_generic or DRIVER_OVERRIDE=/home/public/dpdk/build/kmod/igb_uio.ko
+PCI_BLOCK_SYNC_ON_RESET
+                  If set in the environment, the attempt to wait for block devices associated
+                  with given PCI device will be made upon reset
+
+
+$ build/bin/nvmf_tgt -h
+nvmf_tgt [options]
+options:
+ -c, --config <config>     JSON config file (default none)
+     --json <config>       JSON config file (default none)
+     --json-ignore-init-errors
+                           don't exit on invalid config entry
+ -d, --limit-coredump      do not set max coredump size to RLIM_INFINITY
+ -g, --single-file-segments
+                           force creating just one hugetlbfs file
+ -h, --help                show this usage
+ -i, --shm-id <id>         shared memory ID (optional)
+ -m, --cpumask <mask or list>    core mask (like 0xF) or core list of '[]' embraced (like [0,1,10]) for DPDK
+ -n, --mem-channels <num>  channel number of memory channels used for DPDK
+ -p, --main-core <id>      main (primary) core for DPDK
+ -r, --rpc-socket <path>   RPC listen address (default /var/tmp/spdk.sock)
+ -s, --mem-size <size>     memory size in MB for DPDK (default: 0MB)
+     --silence-noticelog   disable notice level logging to stderr
+ -u, --no-pci              disable PCI access
+     --wait-for-rpc        wait for RPCs to initialize subsystems
+     --max-delay <num>     maximum reactor delay (in microseconds)
+ -B, --pci-blocked <bdf>
+                           pci addr to block (can be used more than once)
+ -R, --huge-unlink         unlink huge files after initialization
+ -v, --version             print SPDK version
+ -A, --pci-allowed <bdf>
+                           pci addr to allow (-B and -A cannot be used at the same time)
+     --huge-dir <path>     use a specific hugetlbfs mount to reserve memory from
+     --iova-mode <pa/va>   set IOVA mode ('pa' for IOVA_PA and 'va' for IOVA_VA)
+     --base-virtaddr <addr>      the base virtual address for DPDK (default: 0x200000000000)
+     --num-trace-entries <num>   number of trace entries for each core, must be power of 2, setting 0 to disable trace (default 32768)
+     --env-context         Opaque context for use of the env implementation
+ -L, --logflag <flag>    enable log flag (all, accel, accel_ioat, aio, app_config, app_rpc, bdev, bdev_ftl, bdev_malloc, bdev_null, bdev_nvme, bdev_raid, bdev_raid0, blob, blob_rw, blobfs, blobfs_bdev, blobfs_bdev_rpc, blobfs_rw, ftl_core, ftl_init, gpt_parse, ioat, json_util, log, log_rpc, lvol, lvol_rpc, nbd, notify_rpc, nvme, nvmf, nvmf_tcp, opal, rdma, reactor, rpc, rpc_client, sock, thread, trace, vbdev_delay, vbdev_gpt, vbdev_lvol, vbdev_opal, vbdev_passthru, vbdev_split, vbdev_zone_block, virtio, virtio_blk, virtio_dev, virtio_pci, virtio_user, vmd)
+ -e, --tpoint-group-mask <mask>
+                           tracepoint group mask for spdk trace buffers (default 0x0, bdev 0x8, nvmf_rdma 0x10, nvmf_tcp 0x20, blobfs 0x80, thread 0x400, nvme_pcie 0x800, all 0xffff)
+
+
+$ build/bin/spdk_tgt -h
+spdk_tgt [options]
+options:
+ -c, --config <config>     JSON config file (default none)
+     --json <config>       JSON config file (default none)
+     --json-ignore-init-errors
+                           don't exit on invalid config entry
+ -d, --limit-coredump      do not set max coredump size to RLIM_INFINITY
+ -g, --single-file-segments
+                           force creating just one hugetlbfs file
+ -h, --help                show this usage
+ -i, --shm-id <id>         shared memory ID (optional)
+ -m, --cpumask <mask or list>    core mask (like 0xF) or core list of '[]' embraced (like [0,1,10]) for DPDK
+ -n, --mem-channels <num>  channel number of memory channels used for DPDK
+ -p, --main-core <id>      main (primary) core for DPDK
+ -r, --rpc-socket <path>   RPC listen address (default /var/tmp/spdk.sock)
+ -s, --mem-size <size>     memory size in MB for DPDK (default: 0MB)
+     --silence-noticelog   disable notice level logging to stderr
+ -u, --no-pci              disable PCI access
+     --wait-for-rpc        wait for RPCs to initialize subsystems
+     --max-delay <num>     maximum reactor delay (in microseconds)
+ -B, --pci-blocked <bdf>
+                           pci addr to block (can be used more than once)
+ -R, --huge-unlink         unlink huge files after initialization
+ -v, --version             print SPDK version
+ -A, --pci-allowed <bdf>
+                           pci addr to allow (-B and -A cannot be used at the same time)
+     --huge-dir <path>     use a specific hugetlbfs mount to reserve memory from
+     --iova-mode <pa/va>   set IOVA mode ('pa' for IOVA_PA and 'va' for IOVA_VA)
+     --base-virtaddr <addr>      the base virtual address for DPDK (default: 0x200000000000)
+     --num-trace-entries <num>   number of trace entries for each core, must be power of 2, setting 0 to disable trace (default 32768)
+     --env-context         Opaque context for use of the env implementation
+ -L, --logflag <flag>    enable log flag (all, accel, accel_ioat, aio, app_config, app_rpc, bdev, bdev_ftl, bdev_malloc, bdev_null, bdev_nvme, bdev_raid, bdev_raid0, blob, blob_rw, blobfs, blobfs_bdev, blobfs_bdev_rpc, blobfs_rw, ftl_core, ftl_init, gpt_parse, ioat, iscsi, json_util, log, log_rpc, lvol, lvol_rpc, nbd, notify_rpc, nvme, nvmf, nvmf_tcp, opal, rdma, reactor, rpc, rpc_client, scsi, sock, thread, trace, vbdev_delay, vbdev_gpt, vbdev_lvol, vbdev_opal, vbdev_passthru, vbdev_split, vbdev_zone_block, vhost, vhost_blk, vhost_blk_data, vhost_ring, vhost_rpc, vhost_scsi, vhost_scsi_data, vhost_scsi_queue, virtio, virtio_blk, virtio_dev, virtio_pci, virtio_user, vmd)
+ -e, --tpoint-group-mask <mask>
+                           tracepoint group mask for spdk trace buffers (default 0x0, iscsi_conn 0x2, scsi 0x4, bdev 0x8, nvmf_rdma 0x10, nvmf_tcp 0x20, blobfs 0x80, thread 0x400, nvme_pcie 0x800, all 0xffff)
+ -f <file>                 pidfile save pid to file under given path
+ -S <path>                 directory where to create vhost sockets (default: pwd)
+
+
+$ build/bin/iscsi_tgt -h
+iscsi_tgt [options]
+options:
+ -c, --config <config>     JSON config file (default none)
+     --json <config>       JSON config file (default none)
+     --json-ignore-init-errors
+                           don't exit on invalid config entry
+ -d, --limit-coredump      do not set max coredump size to RLIM_INFINITY
+ -g, --single-file-segments
+                           force creating just one hugetlbfs file
+ -h, --help                show this usage
+ -i, --shm-id <id>         shared memory ID (optional)
+ -m, --cpumask <mask or list>    core mask (like 0xF) or core list of '[]' embraced (like [0,1,10]) for DPDK
+ -n, --mem-channels <num>  channel number of memory channels used for DPDK
+ -p, --main-core <id>      main (primary) core for DPDK
+ -r, --rpc-socket <path>   RPC listen address (default /var/tmp/spdk.sock)
+ -s, --mem-size <size>     memory size in MB for DPDK (default: 0MB)
+     --silence-noticelog   disable notice level logging to stderr
+ -u, --no-pci              disable PCI access
+     --wait-for-rpc        wait for RPCs to initialize subsystems
+     --max-delay <num>     maximum reactor delay (in microseconds)
+ -B, --pci-blocked <bdf>
+                           pci addr to block (can be used more than once)
+ -R, --huge-unlink         unlink huge files after initialization
+ -v, --version             print SPDK version
+ -A, --pci-allowed <bdf>
+                           pci addr to allow (-B and -A cannot be used at the same time)
+     --huge-dir <path>     use a specific hugetlbfs mount to reserve memory from
+     --iova-mode <pa/va>   set IOVA mode ('pa' for IOVA_PA and 'va' for IOVA_VA)
+     --base-virtaddr <addr>      the base virtual address for DPDK (default: 0x200000000000)
+     --num-trace-entries <num>   number of trace entries for each core, must be power of 2, setting 0 to disable trace (default 32768)
+     --env-context         Opaque context for use of the env implementation
+ -L, --logflag <flag>    enable log flag (all, accel, accel_ioat, aio, app_config, app_rpc, bdev, bdev_ftl, bdev_malloc, bdev_null, bdev_nvme, bdev_raid, bdev_raid0, blob, blob_rw, blobfs, blobfs_bdev, blobfs_bdev_rpc, blobfs_rw, ftl_core, ftl_init, gpt_parse, ioat, iscsi, json_util, log, log_rpc, lvol, lvol_rpc, nbd, notify_rpc, nvme, opal, reactor, rpc, rpc_client, scsi, sock, thread, trace, vbdev_delay, vbdev_gpt, vbdev_lvol, vbdev_opal, vbdev_passthru, vbdev_split, vbdev_zone_block, virtio, virtio_blk, virtio_dev, virtio_pci, virtio_user, vmd)
+ -e, --tpoint-group-mask <mask>
+                           tracepoint group mask for spdk trace buffers (default 0x0, iscsi_conn 0x2, scsi 0x4, bdev 0x8, blobfs 0x80, thread 0x400, nvme_pcie 0x800, all 0xffff)
+ -b                        run iscsi target background, the default is foreground
+

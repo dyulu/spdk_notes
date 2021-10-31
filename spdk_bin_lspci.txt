@@ -1,0 +1,17 @@
+I
+https://github.com/spdk/spdk/tree/master/app/spdk_lspci
+:w
+
+$ build/bin/spdk_lspci -h
+Usage: spdk_lspci
+Print available SPDK PCI devices supported by NVMe driver.
+
+$ scripts/setup.sh
+$ nvme list              # kernel won't see the NVMe devices any more
+$ build/bin/spdk_lspci.  # address (vendorID deviceID)
+
+List of available PCI devices:
+0000:18:00.0 (144d a804)
+0000:1a:00.0 (144d a804)
+
+

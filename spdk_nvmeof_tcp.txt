@@ -1,0 +1,397 @@
+
+https://spdk.io/doc/nvmf.html
+
+$ scripts/rpc.py nvmf_create_transport -h
+usage: rpc.py [options] nvmf_create_transport [-h] -t TRTYPE [-g TGT_NAME]
+                                              [-q MAX_QUEUE_DEPTH]
+                                              [-p MAX_QPAIRS_PER_CTRLR]
+                                              [-m MAX_IO_QPAIRS_PER_CTRLR]
+                                              [-c IN_CAPSULE_DATA_SIZE]
+                                              [-i MAX_IO_SIZE]
+                                              [-u IO_UNIT_SIZE]
+                                              [-a MAX_AQ_DEPTH]
+                                              [-n NUM_SHARED_BUFFERS]
+                                              [-b BUF_CACHE_SIZE] [-d NUM_CQE]
+                                              [-s MAX_SRQ_DEPTH] [-r] [-o]
+                                              [-f] [-y SOCK_PRIORITY]
+                                              [-l ACCEPTOR_BACKLOG]
+                                              [-x ABORT_TIMEOUT_SEC] [-w]
+                                              [-e CONTROL_MSG_NUM] [-M]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -t TRTYPE, --trtype TRTYPE
+                        Transport type (ex. RDMA)
+  -g TGT_NAME, --tgt-name TGT_NAME
+                        The name of the parent NVMe-oF target (optional)
+  -q MAX_QUEUE_DEPTH, --max-queue-depth MAX_QUEUE_DEPTH
+                        Max number of outstanding I/O per queue
+  -p MAX_QPAIRS_PER_CTRLR, --max-qpairs-per-ctrlr MAX_QPAIRS_PER_CTRLR
+                        Max number of SQ and CQ per controller. Deprecated,
+                        use max-io-qpairs-per-ctrlr
+  -m MAX_IO_QPAIRS_PER_CTRLR, --max-io-qpairs-per-ctrlr MAX_IO_QPAIRS_PER_CTRLR
+                        Max number of IO qpairs per controller
+  -c IN_CAPSULE_DATA_SIZE, --in-capsule-data-size IN_CAPSULE_DATA_SIZE
+                        Max number of in-capsule data size
+  -i MAX_IO_SIZE, --max-io-size MAX_IO_SIZE
+                        Max I/O size (bytes)
+  -u IO_UNIT_SIZE, --io-unit-size IO_UNIT_SIZE
+                        I/O unit size (bytes)
+  -a MAX_AQ_DEPTH, --max-aq-depth MAX_AQ_DEPTH
+                        Max number of admin cmds per AQ
+  -n NUM_SHARED_BUFFERS, --num-shared-buffers NUM_SHARED_BUFFERS
+                        The number of pooled data buffers available to the
+                        transport
+  -b BUF_CACHE_SIZE, --buf-cache-size BUF_CACHE_SIZE
+                        The number of shared buffers to reserve for each poll
+                        group
+  -d NUM_CQE, --num-cqe NUM_CQE
+                        The number of CQ entires. Only used when no_srq=true.
+                        Relevant only for RDMA transport
+  -s MAX_SRQ_DEPTH, --max-srq-depth MAX_SRQ_DEPTH
+                        Max number of outstanding I/O per SRQ. Relevant only
+                        for RDMA transport
+  -r, --no-srq          Disable per-thread shared receive queue. Relevant only
+                        for RDMA transport
+  -o, --c2h-success     Disable C2H success optimization. Relevant only for
+                        TCP transport
+  -f, --dif-insert-or-strip
+                        Enable DIF insert/strip. Relevant only for TCP
+                        transport
+  -y SOCK_PRIORITY, --sock-priority SOCK_PRIORITY
+                        The sock priority of the tcp connection. Relevant only
+                        for TCP transport
+  -l ACCEPTOR_BACKLOG, --acceptor-backlog ACCEPTOR_BACKLOG
+                        Pending connections allowed at one time. Relevant only
+                        for RDMA transport
+  -x ABORT_TIMEOUT_SEC, --abort-timeout-sec ABORT_TIMEOUT_SEC
+                        Abort execution timeout value, in seconds
+  -w, --no-wr-batching  Disable work requests batching. Relevant only for RDMA
+                        transport
+  -e CONTROL_MSG_NUM, --control-msg-num CONTROL_MSG_NUM
+                        The number of control messages per poll group.
+                        Relevant only for TCP transport
+  -M, --disable-mappable-bar0
+                        Disable mmap() of BAR0. Relevant only for VFIO-USER
+                        transport
+
+
+$ scripts/rpc.py nvmf_create_subsystem -h
+usage: rpc.py [options] nvmf_create_subsystem [-h] [-t TGT_NAME]
+                                              [-s SERIAL_NUMBER]
+                                              [-d MODEL_NUMBER] [-a]
+                                              [-m MAX_NAMESPACES] [-r]
+                                              [-i MIN_CNTLID] [-I MAX_CNTLID]
+                                              nqn
+
+positional arguments:
+  nqn                   Subsystem NQN (ASCII)
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -t TGT_NAME, --tgt-name TGT_NAME
+                        The name of the parent NVMe-oF target (optional)
+  -s SERIAL_NUMBER, --serial-number SERIAL_NUMBER
+                        Format: 'sn' etc Example: 'SPDK00000000000001'
+  -d MODEL_NUMBER, --model-number MODEL_NUMBER
+                        Format: 'mn' etc Example: 'SPDK Controller'
+  -a, --allow-any-host  Allow any host to connect (don't enforce allowed host
+                        NQN list)
+  -m MAX_NAMESPACES, --max-namespaces MAX_NAMESPACES
+                        Maximum number of namespaces allowed
+  -r, --ana-reporting   Enable ANA reporting feature
+  -i MIN_CNTLID, --min_cntlid MIN_CNTLID
+                        Minimum controller ID
+  -I MAX_CNTLID, --max_cntlid MAX_CNTLID
+                        Maximum controller ID
+
+$ scripts/rpc.py nvmf_subsystem_add_ns -h
+usage: rpc.py [options] nvmf_subsystem_add_ns [-h] [-t TGT_NAME]
+                                              [-p PTPL_FILE] [-n NSID]
+                                              [-g NGUID] [-e EUI64] [-u UUID]
+                                              [-a ANAGRPID]
+                                              nqn bdev_name
+
+positional arguments:
+  nqn                   NVMe-oF subsystem NQN
+  bdev_name             The name of the bdev that will back this namespace
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -t TGT_NAME, --tgt-name TGT_NAME 
+                        The name of the parent NVMe-oF target (optional)
+  -p PTPL_FILE, --ptpl-file PTPL_FILE
+                        The persistent reservation storage location (optional)
+  -n NSID, --nsid NSID  The requested NSID (optional)
+  -g NGUID, --nguid NGUID
+                        Namespace globally unique identifier (optional)
+  -e EUI64, --eui64 EUI64
+                        Namespace EUI-64 identifier (optional)
+  -u UUID, --uuid UUID  Namespace UUID (optional)
+  -a ANAGRPID, --anagrpid ANAGRPID
+                        ANA group ID (optional)
+
+$ scripts/rpc.py nvmf_subsystem_add_listener -h
+usage: rpc.py [options] nvmf_subsystem_add_listener [-h] -t TRTYPE -a TRADDR
+                                                    [-p TGT_NAME] [-f ADRFAM]
+                                                    [-s TRSVCID]
+                                                    nqn
+
+positional arguments:
+  nqn                   NVMe-oF subsystem NQN
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -t TRTYPE, --trtype TRTYPE
+                        NVMe-oF transport type: e.g., rdma
+  -a TRADDR, --traddr TRADDR
+                        NVMe-oF transport address: e.g., an ip address
+  -p TGT_NAME, --tgt-name TGT_NAME
+                        The name of the parent NVMe-oF target (optional)
+  -f ADRFAM, --adrfam ADRFAM
+                        NVMe-oF transport adrfam: e.g., ipv4, ipv6, ib, fc,
+                        intra_host
+  -s TRSVCID, --trsvcid TRSVCID
+                        NVMe-oF transport service id: e.g., a port number
+                        (required for RDMA or TCP)
+
+
+
+==== NVMeoF over TCP: target setup
+
+# TCP transport is built into the nvmf_tgt by default, and it does not need any special libraries.
+
+$ firewall-cmd --add-port=4420/tcp --permanent
+$ firewall-cmd --reload
+
+$ cd ~/spdk/
+
+# Start nvmf target
+$ scripts/setup.sh
+$ build/bin/spdk_tgt &          #  ./spdk_tgt -c ~/config_nvmeof_tcp.json -L nvme -L bdev -L bdev_nvme -L log -L log_rpc &
+$ scripts/rpc.py nvmf_get_transports
+[]
+$ scripts/rpc.py nvmf_get_subsystems
+[
+  {
+    "nqn": "nqn.2014-08.org.nvmexpress.discovery",
+    "subtype": "Discovery",
+    "listen_addresses": [],
+    "allow_any_host": true,
+    "hosts": []
+  }
+]
+
+# Create subsystem with specified NQN, serial#, model#, and allow any host
+$ scripts/rpc.py nvmf_create_subsystem nqn.2016-06.io.spdk:cnode1 -a -s SPDK00000000000001 -d SPDK_Controller1
+$ scripts/rpc.py nvmf_get_subsystems
+[
+  {
+    "nqn": "nqn.2014-08.org.nvmexpress.discovery",
+    "subtype": "Discovery",
+    "listen_addresses": [],
+    "allow_any_host": true,
+    "hosts": []
+  },
+  {
+    "nqn": "nqn.2016-06.io.spdk:cnode1",
+    "subtype": "NVMe",
+    "listen_addresses": [],
+    "allow_any_host": true,
+    "hosts": [],
+    "serial_number": "SPDK00000000000001",
+    "model_number": "SPDK_Controller1",
+    "max_namespaces": 32,
+    "min_cntlid": 1,
+    "max_cntlid": 65519,
+    "namespaces": []
+  }
+]
+
+# Create bdevs
+# scripts/rpc.py bdev_nvme_attach_controller -b my_nvme0 -a 0000:8c:00.0 -t pcie
+# scripts/rpc.py bdev_nvme_attach_controller -b my_nvme1 -a 0000:18:00.0 -t pcie
+# scripts/rpc.py bdev_nvme_get_controllers
+# scripts/rpc.py bdev_get_bdevs
+
+# Add NVMe namespaces to the subsystem
+$ scripts/rpc.py nvmf_subsystem_add_ns nqn.2016-06.io.spdk:cnode1 my_nvme0n1
+$ scripts/rpc.py nvmf_subsystem_add_ns nqn.2016-06.io.spdk:cnode1 my_nvme1n1
+$ scripts/rpc.py nvmf_get_subsystems
+[
+  {
+    "nqn": "nqn.2014-08.org.nvmexpress.discovery",
+    "subtype": "Discovery",
+    "listen_addresses": [],
+    "allow_any_host": true,
+    "hosts": []
+  },
+  {
+    "nqn": "nqn.2016-06.io.spdk:cnode1",
+    "subtype": "NVMe",
+    "listen_addresses": [],
+    "allow_any_host": true,
+    "hosts": [],
+    "serial_number": "SPDK00000000000001",
+    "model_number": "SPDK_Controller1",
+    "max_namespaces": 32,
+    "min_cntlid": 1,
+    "max_cntlid": 65519,
+    "namespaces": [
+      {
+        "nsid": 1,
+        "bdev_name": "my_nvme0n1",
+        "name": "my_nvme0n1",
+        "nguid": "18AE1771B7C74926BD81157BEC33BEA0",
+        "uuid": "18ae1771-b7c7-4926-bd81-157bec33bea0"
+      },
+      {
+        "nsid": 2,
+        "bdev_name": "my_nvme1n1",
+        "name": "my_nvme1n1",
+        "nguid": "ADFFE52D81644255BA4E97F416B55248",
+        "uuid": "adffe52d-8164-4255-ba4e-97f416b55248"
+      }
+    ]
+  }
+]
+
+# Configure TCP transport with an I/O unit size of 16384 bytes, 8 max qpairs per controller, and an in capsule data size of 8192 bytes
+# This is needed by the step below to add listener.
+$ scripts/rpc.py nvmf_create_transport -t TCP -u 16384 -m 8 -c 8192
+$ scripts/rpc.py nvmf_get_transports
+[ 
+  { 
+    "trtype": "TCP",
+    "max_queue_depth": 128,
+    "max_io_qpairs_per_ctrlr": 8,
+    "in_capsule_data_size": 8192,
+    "max_io_size": 131072,
+    "io_unit_size": 16384,
+    "max_aq_depth": 128,
+    "num_shared_buffers": 511,
+    "buf_cache_size": 32,
+    "dif_insert_or_strip": false,
+    "c2h_success": true,
+    "sock_priority": 0,
+    "abort_timeout_sec": 1
+  }
+]
+
+# RDMA NIC addr: ip a; choose port# (transport service id)
+$ scripts/rpc.py nvmf_subsystem_add_listener nqn.2016-06.io.spdk:cnode1 -t tcp -a 10.194.192.201 -s 4420
+$ scripts/rpc.py nvmf_get_subsystems
+[
+  {
+    "nqn": "nqn.2014-08.org.nvmexpress.discovery",
+    "subtype": "Discovery",
+    "listen_addresses": [],
+    "allow_any_host": true,
+    "hosts": []
+  },
+  {
+    "nqn": "nqn.2016-06.io.spdk:cnode1",
+    "subtype": "NVMe",
+    "listen_addresses": [
+      {
+        "transport": "TCP",
+        "trtype": "TCP",
+        "adrfam": "IPv4",
+        "traddr": "10.194.192.201",
+        "trsvcid": "4420"
+      }
+    ],
+    "allow_any_host": true,
+    "hosts": [],
+    "serial_number": "SPDK00000000000001",
+    "model_number": "SPDK_Controller1",
+    "max_namespaces": 32,
+    "min_cntlid": 1,
+    "max_cntlid": 65519,
+    "namespaces": [
+      {
+        "nsid": 1,
+        "bdev_name": "my_nvme0n1",
+        "name": "my_nvme0n1",
+        "nguid": "18AE1771B7C74926BD81157BEC33BEA0",
+        "uuid": "18ae1771-b7c7-4926-bd81-157bec33bea0"
+      },
+      {
+        "nsid": 2,
+        "bdev_name": "my_nvme1n1",
+        "name": "my_nvme1n1",
+        "nguid": "ADFFE52D81644255BA4E97F416B55248",
+        "uuid": "adffe52d-8164-4255-ba4e-97f416b55248"
+      }
+    ]
+  }
+]
+
+# Save the config so it can be loaded later
+$ scripts/rpc.py save_config > ~/config_nvmeof_tcp.json
+
+==== NVMeoF over TCP: initiator setup on Ubuntu 20.4
+
+# Need sudo if not logged in as root
+
+# Both the Linux kernel and SPDK implement an NVMe over Fabrics host.
+# Linux kernel: nvme-rdma and nvme-tcp driver modules; nvme-cli tool
+$ modprobe nvme-tcp
+$ nvme discover -t tcp -a 10.194.192.201 -s 4420
+
+Discovery Log Number of Records 1, Generation counter 5
+=====Discovery Log Entry 0======
+trtype:  tcp
+adrfam:  ipv4
+subtype: nvme subsystem
+treq:    not required
+portid:  0
+trsvcid: 4420
+subnqn:  nqn.2016-06.io.spdk:cnode1
+traddr:  10.194.192.201
+sectype: none
+
+# dmesg
+nvme nvme12: new ctrl: NQN "nqn.2014-08.org.nvmexpress.discovery", addr 10.194.192.201:4420
+nvme nvme12: Removing ctrl: NQN "nqn.2014-08.org.nvmexpress.discovery"
+
+$ nvme connect -t tcp -n "nqn.2016-06.io.spdk:cnode1" -a 10.194.192.201 -s 4420
+
+# dmesg
+nvme nvme12: creating 8 I/O queues.
+nvme nvme12: mapped 8/0/0 default/read/poll queues.
+nvme nvme12: new ctrl: NQN "nqn.2016-06.io.spdk:cnode1", addr 10.194.192.201:4420
+
+$ lsblk
+......
+nvme12n1                     259:20   0 894.3G  0 disk 
+nvme12n2                     259:22   0 894.3G  0 disk 
+......
+
+$ nvme list
+Node             SN                   Model                                    Namespace Usage                      Format           FW Rev  
+---------------- -------------------- ---------------------------------------- --------- -------------------------- ---------------- --------
+......
+/dev/nvme12n1    SPDK00000000000001   SPDK_Controller1                         1         960.20  GB / 960.20  GB    512   B +  0 B   21.10   
+/dev/nvme12n2    SPDK00000000000001   SPDK_Controller1                         2         960.20  GB / 960.20  GB    512   B +  0 B   21.10   
+
+$ cat /sys/class/nvme/nvme12/transport
+tcp
+
+$ dd if=/dev/nvme12n1 bs=1024 count=10485760 of=/dev/null
+10485760+0 records in
+10485760+0 records out
+10737418240 bytes (11 GB, 10 GiB) copied, 92.303 s, 116 MB/s
+
+$ dd if=/dev/zero bs=1024 count=10485760 of=/dev/nvme12n1
+10485760+0 records in
+10485760+0 records out
+10737418240 bytes (11 GB, 10 GiB) copied, 412.627 s, 26.0 MB/s
+
+# To see IO stats on target:  scripts/rpc.py bdev_get_iostat
+
+$ nvme disconnect -n "nqn.2016-06.io.spdk:cnode1"
+NQN:nqn.2016-06.io.spdk:cnode1 disconnected 1 controller(s)
+
+# dmesg
+nvme nvme12: Removing ctrl: NQN "nqn.2016-06.io.spdk:cnode1"

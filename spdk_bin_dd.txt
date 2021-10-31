@@ -1,0 +1,67 @@
+
+https://github.com/spdk/spdk/tree/master/app/spdk_dd
+
+$ build/bin/spdk_dd -h
+build/bin/spdk_dd [options]
+options:
+ -c, --config <config>     JSON config file (default none)
+     --json <config>       JSON config file (default none)
+     --json-ignore-init-errors
+                           don't exit on invalid config entry
+ -d, --limit-coredump      do not set max coredump size to RLIM_INFINITY
+ -g, --single-file-segments
+                           force creating just one hugetlbfs file
+ -h, --help                show this usage
+ -i, --shm-id <id>         shared memory ID (optional)
+ -m, --cpumask <mask or list>    core mask (like 0xF) or core list of '[]' embraced (like [0,1,10]) for DPDK
+ -n, --mem-channels <num>  channel number of memory channels used for DPDK
+ -p, --main-core <id>      main (primary) core for DPDK
+ -r, --rpc-socket <path>   RPC listen address (default /var/tmp/spdk.sock)
+ -s, --mem-size <size>     memory size in MB for DPDK (default: 0MB)
+     --silence-noticelog   disable notice level logging to stderr
+ -u, --no-pci              disable PCI access
+     --wait-for-rpc        wait for RPCs to initialize subsystems
+     --max-delay <num>     maximum reactor delay (in microseconds)
+ -B, --pci-blocked <bdf>
+                           pci addr to block (can be used more than once)
+ -R, --huge-unlink         unlink huge files after initialization
+ -v, --version             print SPDK version
+ -A, --pci-allowed <bdf>
+                           pci addr to allow (-B and -A cannot be used at the same time)
+     --huge-dir <path>     use a specific hugetlbfs mount to reserve memory from
+     --iova-mode <pa/va>   set IOVA mode ('pa' for IOVA_PA and 'va' for IOVA_VA)
+     --base-virtaddr <addr>      the base virtual address for DPDK (default: 0x200000000000)
+     --num-trace-entries <num>   number of trace entries for each core, must be power of 2, setting 0 to disable trace (default 32768)
+     --env-context         Opaque context for use of the env implementation
+ -L, --logflag <flag>    enable log flag (all, accel, accel_ioat, aio, app_config, app_rpc, bdev, bdev_ftl, bdev_malloc, bdev_null, bdev_nvme, bdev_raid, bdev_raid0, blob, blob_rw, blobfs, blobfs_bdev, blobfs_bdev_rpc, blobfs_rw, ftl_core, ftl_init, gpt_parse, ioat, json_util, log, log_rpc, lvol, lvol_rpc, notify_rpc, nvme, opal, reactor, rpc, rpc_client, sock, thread, trace, vbdev_delay, vbdev_gpt, vbdev_lvol, vbdev_opal, vbdev_passthru, vbdev_split, vbdev_zone_block, virtio, virtio_blk, virtio_dev, virtio_pci, virtio_user, vmd)
+ -e, --tpoint-group-mask <mask>
+                           tracepoint group mask for spdk trace buffers (default 0x0, bdev 0x8, blobfs 0x80, thread 0x400, nvme_pcie 0x800, all 0xffff)
+[--------- DD Options ---------]
+ --if Input file. Must specify either --if or --ib.
+ --ib Input bdev. Must specifier either --if or --ib
+ --of Output file. Must specify either --of or --ob.
+ --ob Output bdev. Must specify either --of or --ob.
+ --iflag Input file flags.
+ --oflag Onput file flags.
+ --bs I/O unit size (default: 4096)
+ --qd Queue depth (default: 2)
+ --count I/O unit count. The number of I/O units to copy. (default: all)
+ --skip Skip this many I/O units at start of input. (default: 0)
+ --seek Skip this many I/O units at start of output. (default: 0)
+ --aio Force usage of AIO. (by default io_uring is used if available)
+ Available iflag and oflag values:
+  append - append mode
+  direct - use direct I/O for data
+  directory - fail unless a directory
+  dsync - use synchronized I/O for data
+  noatime - do not update access time
+  noctty - do not assign controlling terminal from file
+  nofollow - do not follow symlinks
+  nonblock - use non-blocking I/O
+  sync - use synchronized I/O for data and metadata
+
+
+$ scripts/gen_nvme.sh --json-with-subsystems > ~/dd.json
+$ build/bin/spdk_dd --json ~/dd.json --ib Nvme0n1 --of ~/dd.out --bs 4096 --count 1000
+......
+Copying: 4000/4000 [kB] (average 523 MBps)

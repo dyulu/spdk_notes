@@ -1,0 +1,55 @@
+
+==== NVMe spec
+
+https://nvmexpress.org/specifications/
+https://nvmexpress.org/developers/nvme-specification/
+https://nvmexpress.org/developers/nvme-mi-specification/
+https://nvmexpress.org/developers/nvme-of-specification/
+https://nvmexpress.org/wp-content/uploads/NVMe-Key-Value-Command-Set-Specification-1.0a-2021.07.26-Ratified.pdf
+
+==== SPDK
+
+# Where Does SPDK Fit in the NVMe-oF Landscape
+https://www.youtube.com/watch?v=OTVUWG-mHXU
+•Overview of the SPDK project
+•Key NVMe-oF use cases for SPDK
+•Examples of NVMe-oF use cases not suited for SPDK
+•NVMe-oF Target Architecture and Design
+•NVMe-oF Host Architecture and Design
+•Performance data
+
+# SPDK based user space NVMe over TCP Transport Solution (SDC 2019)
+https://www.youtube.com/watch?v=cMddPZ5gd2I&t=5s
+SPDK implements both TCP transport in host and target side
+Introduce some techniques for the further performance improvement of SPDK's solution, e.g., 
+  (1) leveraging user space TCP stack (e.g., VPP + DPDK) to replace the kernel TCP stack;
+  (2) leveraging some features of hardware such as ADQ on Intel's E810 NIC.
+
+==== NVMe KV
+
+# The Key to Value: Understanding the NVMe Key-Value Standard
+https://www.youtube.com/watch?v=uQFl5T7IKpI
+
+==== NVME KV open source code
+
+SNIA KV API, Kernel driver, and emulator:
+  Public github: https://github.com/OpenMPDK/KVSSD
+  KV userspace driver: https://github.com/OpenMPDK/uNVMe
+
+KVRocks: RocksDB compatible key value store and MyRocks compatible storage engine designed for KV SSD
+  https://github.com/OpenMPDK/KVRocks
+
+==== Key-Value Operations
+Storing
+  Data is stored as a single value associated with a key
+    Not updatable in place
+    Not extendable in place
+    Complete value
+Retrieving
+  Data is retrieved as a single value associated with a key
+    Could be portion of value
+Deleting
+  Key-Value pair may be deleted
+Listing
+  Able to list all Keys stored on the device
+

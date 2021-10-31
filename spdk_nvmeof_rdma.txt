@@ -1,0 +1,496 @@
+
+https://spdk.io/doc/nvmf.html
+
+==== https://www.rdmamojo.com/2014/12/27/installation-rdma-stack-manually/
+## Enable RDMA core and low-level drivers
+Enter the menu: Device Drivers -> InfiniBand support
+(This option name is misleading; it enables kernel support for all RDMA transports (InfiniBand, iWARP, and RoCE) and not only InfiniBand).
+
+Enable the following options:
+  InfiniBand userspace MAD support
+  InfiniBand userspace access (verbs and CM)
+  IP-over-InfiniBand
+    IP-over-InfiniBand Connected Mode support
+  InfiniBand SCSI RDMA Protocol
+  iSCSI Extensions for RDMA (iSER)
+  The low-level drivers for the RDMA devices that one may have on his computer
+
+## Enable RDS
+Enter the menu: Networking support -> Networking options:
+
+Enable the following options:
+  The RDS Protocol
+    RDS over Infiniband and iWARP
+
+## Enable NFS over RDMA
+Enter the menu: File Systems -> Network File Systems:
+
+Enable the following options:
+  RPC over RDMA Client Support
+  RPC over RDMA Server Support
+
+## Device Drivers -> Platform support for Mellanox
+
+==== https://community.mellanox.com/s/article/howto-compile-linux-kernel-for-nvme-over-fabrics
+
+https://community.mellanox.com/s/article/howto-configure-nvme-over-fabrics
+
+CONFIG_INFINIBAND=y
+CONFIG_INFINIBAND_USER_MAD=y
+CONFIG_INFINIBAND_USER_ACCESS=y
+CONFIG_INFINIBAND_USER_MEM=y
+CONFIG_INFINIBAND_ON_DEMAND_PAGING=y
+CONFIG_INFINIBAND_ADDR_TRANS=y
+CONFIG_INFINIBAND_ADDR_TRANS_CONFIGFS=y
+CONFIG_INFINIBAND_DISABLE_AUTO_RESET=y
+CONFIG_INFINIBAND_MTHCA=y
+CONFIG_INFINIBAND_MTHCA_DEBUG=y
+CONFIG_MLX4_INFINIBAND=m
+CONFIG_MLX5_INFINIBAND=m
+CONFIG_INFINIBAND_NES=m
+CONFIG_INFINIBAND_IPOIB=m
+CONFIG_INFINIBAND_IPOIB_DEBUG=y
+CONFIG_INFINIBAND_SRP=y
+CONFIG_INFINIBAND_ISER=m
+
+CONFIG_NVME_CORE=m
+# CONFIG_BLK_DEV_NVME_SCSI is not set <-- Ignore this line.
+CONFIG_NVME_FABRICS=m
+CONFIG_NVME_RDMA=m
+CONFIG_NVME_TARGET=m
+CONFIG_NVME_TARGET_LOOP=m
+CONFIG_NVME_TARGET_RDMA=m
+
+==== NVMeoF over RDMA: target setup
+
+# Prerequisites for InfiniBand/RDMA Verbs
+modprobe ib_cm
+modprobe ib_core
+modprobe ib_ucm || true  # ib_ucm does not exist in newer versions of the kernel and is not required
+modprobe ib_umad
+modprobe ib_uverbs
+modprobe iw_cm
+modprobe rdma_cm
+modprobe rdma_ucm
+
+# Prerequisites for RDMA NICs
+$ ls /sys/class/infiniband/*/device/net
+/sys/class/infiniband/mlx5_0/device/net:
+eth0
+/sys/class/infiniband/mlx5_1/device/net:
+eth1
+$ lsmod | grep mlx
+mlx5_ib               372736  0
+mlx5_core             741376  1 mlx5_ib
+mlxfw                  32768  1 mlx5_core
+ptp                    32768  4 i40e,igb,e1000e,mlx5_core
+$ ip a         # Make sure RDMA NICs are on the network
+
+# Start the target
+apt install libibverbs1
+apt install librdmacm1
+apt install libfuse3-3
+apt install libaio1
+
+$ ls /etc/libibverbs.d/   # holds information about the installed userspace low-level driver libraries
+bnxt_re.driver	cxgb4.driver	  hns.driver	ipathverbs.driver  mlx5.driver	 nes.driver	qedr.driver  vmw_pvrdma.driver
+cxgb3.driver	hfi1verbs.driver  i40iw.driver	mlx4.driver	   mthca.driver  ocrdma.driver	rxe.driver
+
+firewall-cmd --add-port=4420/tcp --permanent     # apt install firewalld
+firewall-cmd --reload
+
+scripts/setup.sh
+build/bin/spdk_tgt    #  ./spdk_tgt -c ~/config_nvmeof_rdma.json
+
+# Configuring the SPDK NVMeoF RDMA Target
+$ scripts/rpc.py nvmf_create_transport -t RDMA -u 8192 -m 4 -c 0   # I/O unit size of 8192 bytes, 4 max qpairs per controller, in capsule data size of 0 bytes
+$ scripts/rpc.py nvmf_get_transports
+[
+  {
+    "trtype": "RDMA",
+    "max_queue_depth": 128,
+    "max_io_qpairs_per_ctrlr": 4,
+    "in_capsule_data_size": 0,
+    "max_io_size": 131072,
+    "io_unit_size": 8192,
+    "max_aq_depth": 128,
+    "num_shared_buffers": 4095,
+    "buf_cache_size": 32,
+    "dif_insert_or_strip": false,
+    "max_srq_depth": 4096,
+    "no_srq": false,
+    "acceptor_backlog": 100,
+    "no_wr_batching": false,
+    "abort_timeout_sec": 1
+  }
+]
+$ scripts/rpc.py nvmf_get_subsystems
+[
+  {
+    "nqn": "nqn.2014-08.org.nvmexpress.discovery",
+    "subtype": "Discovery",
+    "listen_addresses": [],
+    "allow_any_host": true,
+    "hosts": []
+  }
+]
+$ scripts/rpc.py nvmf_create_subsystem nqn.2016-06.io.spdk:cnode1 -a -s SPDK00000000000001 -d SPDK_Controller1
+$ scripts/rpc.py nvmf_get_subsystems
+[
+  {
+    "nqn": "nqn.2014-08.org.nvmexpress.discovery",
+    "subtype": "Discovery",
+    "listen_addresses": [],
+    "allow_any_host": true,
+    "hosts": []
+  },
+  {
+    "nqn": "nqn.2016-06.io.spdk:cnode1",
+    "subtype": "NVMe",
+    "listen_addresses": [],
+    "allow_any_host": true,
+    "hosts": [],
+    "serial_number": "SPDK00000000000001",
+    "model_number": "SPDK_Controller1",
+    "max_namespaces": 32,
+    "min_cntlid": 1,
+    "max_cntlid": 65519,
+    "namespaces": []
+  }
+]
+# scripts/rpc.py bdev_nvme_attach_controller -b my_nvme0 -a 0000:86:00.0 -t pcie
+# scripts/rpc.py bdev_nvme_attach_controller -b my_nvme1 -a 0000:8c:00.0 -t pcie
+## Add Null bdev
+## scripts/rpc.py bdev_null_create Null0 1024 512
+## scripts/rpc.py nvmf_subsystem_add_ns nqn.2016-06.io.spdk:cnode1 Null0
+### Add Malloc bdev
+### scripts/rpc.py bdev_malloc_create -b Malloc0 512 512
+### scripts/rpc.py nvmf_subsystem_add_ns nqn.2016-06.io.spdk:cnode1 Malloc0
+# scripts/rpc.py nvmf_subsystem_get_controllers nqn.2016-06.io.spdk:cnode1
+# scripts/rpc.py bdev_nvme_get_controllers
+# scripts/rpc.py bdev_get_bdevs
+$ scripts/rpc.py nvmf_subsystem_add_ns nqn.2016-06.io.spdk:cnode1 my_nvme0n1
+$ scripts/rpc.py nvmf_subsystem_add_ns nqn.2016-06.io.spdk:cnode1 my_nvme1n1
+$ scripts/rpc.py nvmf_get_subsystems
+[
+  {
+    "nqn": "nqn.2014-08.org.nvmexpress.discovery",
+    "subtype": "Discovery",
+    "listen_addresses": [],
+    "allow_any_host": true,
+    "hosts": []
+  },
+  {
+    "nqn": "nqn.2016-06.io.spdk:cnode1",
+    "subtype": "NVMe",
+    "listen_addresses": [],
+    "allow_any_host": true,
+    "hosts": [],
+    "serial_number": "SPDK00000000000001",
+    "model_number": "SPDK_Controller1",
+    "max_namespaces": 32,
+    "min_cntlid": 1,
+    "max_cntlid": 65519,
+    "namespaces": [
+      {
+        "nsid": 1,
+        "bdev_name": "my_nvme0n1",
+        "name": "my_nvme0n1",
+        "nguid": "4C6506A671334491BE58A48D0ADC85BC",
+        "uuid": "4c6506a6-7133-4491-be58-a48d0adc85bc"
+      },
+      {
+        "nsid": 2,
+        "bdev_name": "my_nvme1n1",
+        "name": "my_nvme1n1",
+        "nguid": "61597CA132224B63A198F6BFA1731C18",
+        "uuid": "61597ca1-3222-4b63-a198-f6bfa1731c18"
+      }
+    ]
+  }
+]
+# RDMA NIC addr: ip a; choose port# (transport service id)
+$ scripts/rpc.py nvmf_subsystem_add_listener nqn.2016-06.io.spdk:cnode1 -t rdma -a 10.194.194.38 -s 4420
+$ scripts/rpc.py nvmf_get_subsystems
+[
+  {
+    "nqn": "nqn.2014-08.org.nvmexpress.discovery",
+    "subtype": "Discovery",
+    "listen_addresses": [],
+    "allow_any_host": true,
+    "hosts": []
+  },
+  {
+    "nqn": "nqn.2016-06.io.spdk:cnode1",
+    "subtype": "NVMe",
+    "listen_addresses": [
+      {
+        "transport": "RDMA",
+        "trtype": "RDMA",
+        "adrfam": "IPv4",
+        "traddr": "10.194.194.38",
+        "trsvcid": "4420"
+      }
+    ],
+    "allow_any_host": true,
+    "hosts": [],
+    "serial_number": "SPDK00000000000001",
+    "model_number": "SPDK_Controller1",
+    "max_namespaces": 32,
+    "min_cntlid": 1,
+    "max_cntlid": 65519,
+    "namespaces": [
+      {
+        "nsid": 1,
+        "bdev_name": "my_nvme0n1",
+        "name": "my_nvme0n1",
+        "nguid": "597F0B7F99544CBD8B30D302968AFF80",
+        "uuid": "597f0b7f-9954-4cbd-8b30-d302968aff80"
+      },
+      {
+        "nsid": 2,
+        "bdev_name": "my_nvme1n1",
+        "name": "my_nvme1n1",
+        "nguid": "50C31FD2795E4206B2D301F8B84A2F1D",
+        "uuid": "50c31fd2-795e-4206-b2d3-01f8b84a2f1d"
+      }
+    ]
+  }
+]
+
+# Save the config so it can be loaded later
+$ scripts/rpc.py save_config > ~/config_nvmeof_rdma.json
+
+==== NVMeoF over RDMA: use SPDK NVMf initiator
+
+$ spdk/scripts/setup.sh
+
+# 4K 100% Random Read workload to remote NVMe SSDs exported over the network via NVMeoF for 300 seconds
+$ spdk/build/examples/perf -q 128 -o 4096 -w randread -r 'trtype:RDMA adrfam:IPv4 traddr:10.194.194.38 trsvcid:4420' -t 300
+......
+EAL: No free 2048 kB hugepages reported on node 1
+EAL: No available 1048576 kB hugepages reported
+TELEMETRY: No legacy callbacks, legacy socket not created
+Initializing NVMe Controllers
+Attached to NVMe over Fabrics controller at 10.194.194.38:4420: nqn.2016-06.io.spdk:cnode1
+controller IO queue size 128 less than required
+Consider using lower queue depth or small IO size because IO requests may be queued at the NVMe driver.
+controller IO queue size 128 less than required
+Consider using lower queue depth or small IO size because IO requests may be queued at the NVMe driver.
+Associating RDMA (addr:10.194.194.38 subnqn:nqn.2016-06.io.spdk:cnode1) NSID 1 with lcore 0
+Associating RDMA (addr:10.194.194.38 subnqn:nqn.2016-06.io.spdk:cnode1) NSID 2 with lcore 0
+Initialization complete. Launching workers.
+========================================================
+                                                                                                                   Latency(us)
+Device Information                                                             :       IOPS      MiB/s    Average        min        max
+RDMA (addr:10.194.194.38 subnqn:nqn.2016-06.io.spdk:cnode1) NSID 1 from core  0:  338240.02    1321.25     378.41     144.01    1977.85
+RDMA (addr:10.194.194.38 subnqn:nqn.2016-06.io.spdk:cnode1) NSID 2 from core  0:  338241.18    1321.25     378.41     125.69    1028.69
+========================================================
+Total                                                                          :  676481.19    2642.50     378.41     125.69    1977.85
+
+# 4K 70/30 Random Read/Write mix workload to remote NVMe SSDs exported over the network via NVMeoF for 300 seconds
+$ spdk/build/examples/perf -q 128 -o 4096 -w randrw -M 70 -r 'trtype:RDMA adrfam:IPv4 traddr:10.194.194.38 trsvcid:4420' -t 300
+......
+EAL: No free 2048 kB hugepages reported on node 1
+EAL: No available 1048576 kB hugepages reported
+TELEMETRY: No legacy callbacks, legacy socket not created
+Initializing NVMe Controllers
+Attached to NVMe over Fabrics controller at 10.194.194.38:4420: nqn.2016-06.io.spdk:cnode1
+controller IO queue size 128 less than required
+Consider using lower queue depth or small IO size because IO requests may be queued at the NVMe driver.
+controller IO queue size 128 less than required
+Consider using lower queue depth or small IO size because IO requests may be queued at the NVMe driver.
+Associating RDMA (addr:10.194.194.38 subnqn:nqn.2016-06.io.spdk:cnode1) NSID 1 with lcore 0
+Associating RDMA (addr:10.194.194.38 subnqn:nqn.2016-06.io.spdk:cnode1) NSID 2 with lcore 0
+Initialization complete. Launching workers.
+========================================================
+                                                                                                                   Latency(us)
+Device Information                                                             :       IOPS      MiB/s    Average        min        max
+RDMA (addr:10.194.194.38 subnqn:nqn.2016-06.io.spdk:cnode1) NSID 1 from core  0:  371468.84    1451.05     344.56      50.44    3141.51
+RDMA (addr:10.194.194.38 subnqn:nqn.2016-06.io.spdk:cnode1) NSID 2 from core  0:  372417.04    1454.75     343.68      47.20    3612.60
+========================================================
+Total                                                                          :  743885.88    2905.80     344.12      47.20    3612.60
+
+==== NVMeoF over RDMA: initiator setup on Ubuntu 20.4
+
+# Need sudo if not logged in as root
+
+# Both the Linux kernel and SPDK implement an NVMe over Fabrics host.
+# Linux kernel: nvme-rdma and nvme-tcp driver modules; nvme-cli tool
+$ modprobe nvme-rdma
+$ cat /etc/nvme/hostnqn    # This host's NQN
+nqn.2014-08.org.nvmexpress:uuid:85340c0d-a889-45dc-8da5-be0ca29cd7d5
+$ nvme discover -t rdma -a 10.194.194.38 -s 4420
+Discovery Log Number of Records 1, Generation counter 5
+=====Discovery Log Entry 0======
+trtype:  rdma
+adrfam:  ipv4
+subtype: nvme subsystem
+treq:    not required
+portid:  0
+trsvcid: 4420
+subnqn:  nqn.2016-06.io.spdk:cnode1
+traddr:  10.194.194.38
+rdma_prtype: not specified
+rdma_qptype: connected
+rdma_cms:    rdma-cm
+rdma_pkey: 0x0000
+
+# dmesg
+nvme nvme12: new ctrl: NQN "nqn.2014-08.org.nvmexpress.discovery", addr 10.194.194.38:4420
+nvme nvme12: Removing ctrl: NQN "nqn.2014-08.org.nvmexpress.discovery"
+
+$ nvme connect -t rdma -n "nqn.2016-06.io.spdk:cnode1" -a 10.194.194.38 -s 4420
+
+# dmesg
+nvme nvme12: creating 4 I/O queues.
+nvme nvme12: mapped 4/0/0 default/read/poll queues.
+nvme nvme12: new ctrl: NQN "nqn.2016-06.io.spdk:cnode1", addr 10.194.194.38:4420
+
+$ lsblk
+......
+nvme12n1 259:13   0 894.3G  0 disk 
+nvme12n2 259:14   0 894.3G  0 disk 
+
+$ dd if=/dev/nvme12n1 bs=1024 count=10485760 of=/dev/null
+10485760+0 records in
+10485760+0 records out
+10737418240 bytes (11 GB, 10 GiB) copied, 13.3092 s, 807 MB/s
+
+$ dd if=/dev/zero bs=1024 count=10485760 of=/dev/nvme12n1
+10485760+0 records in
+10485760+0 records out
+10737418240 bytes (11 GB, 10 GiB) copied, 132.68 s, 80.9 MB/s
+
+# To see IO stats on target:  scripts/rpc.py bdev_get_iostat
+#                             scripts/iostat.py 
+
+$ nvme disconnect -n "nqn.2016-06.io.spdk:cnode1"
+NQN:nqn.2016-06.io.spdk:cnode1 disconnected 1 controller(s)
+
+# dmesg
+nvme nvme12: Removing ctrl: NQN "nqn.2016-06.io.spdk:cnode1"
+
+==== NVMeoF with both RDMA and TCP ====
+==== Target
+
+$ scripts/rpc.py nvmf_get_subsystems
+[
+  {
+    "nqn": "nqn.2014-08.org.nvmexpress.discovery",
+    "subtype": "Discovery",
+    "listen_addresses": [],
+    "allow_any_host": true,
+    "hosts": []
+  },
+  {
+    "nqn": "nqn.2016-06.io.spdk:cnode1",
+    "subtype": "NVMe",
+    "listen_addresses": [
+      {
+        "transport": "RDMA",
+        "trtype": "RDMA",
+        "adrfam": "IPv4",
+        "traddr": "10.194.194.38",
+        "trsvcid": "4420"
+      },
+      {
+        "transport": "TCP",
+        "trtype": "TCP",
+        "adrfam": "IPv4",
+        "traddr": "10.194.194.38",
+        "trsvcid": "4420"
+      }
+    ],
+    "allow_any_host": true,
+    "hosts": [],
+    "serial_number": "SPDK00000000000001",
+    "model_number": "SPDK_Controller1",
+    "max_namespaces": 32,
+    "min_cntlid": 1,
+    "max_cntlid": 65519,
+    "namespaces": [
+      {
+        "nsid": 1,
+        "bdev_name": "my_nvme0n1",
+        "name": "my_nvme0n1",
+        "nguid": "2FF2EB7088964ED6B709FC67A71686E0",
+        "uuid": "2ff2eb70-8896-4ed6-b709-fc67a71686e0"
+      },
+      {
+        "nsid": 2,
+        "bdev_name": "my_nvme1n1",
+        "name": "my_nvme1n1",
+        "nguid": "703D903BBADC4E8EBB6B18AA2D0DAF9E",
+        "uuid": "703d903b-badc-4e8e-bb6b-18aa2d0daf9e"
+      }
+    ]
+  }
+]
+
+==== Initiator: same NVMe devices on target discovered once with TCP and once with RDMA
+
+$ nvme connect -t tcp -n "nqn.2016-06.io.spdk:cnode1" -a 10.194.194.38 -s 4420
+$ nvme connect -t rdma -n "nqn.2016-06.io.spdk:cnode1" -a 10.194.194.38 -s 4420
+
+# dmesg
+nvme nvme12: creating 8 I/O queues.
+nvme nvme12: mapped 8/0/0 default/read/poll queues.
+nvme nvme12: new ctrl: NQN "nqn.2016-06.io.spdk:cnode1", addr 10.194.194.38:4420
+nvme nvme13: creating 4 I/O queues.
+nvme nvme13: mapped 4/0/0 default/read/poll queues.
+nvme nvme13: new ctrl: NQN "nqn.2016-06.io.spdk:cnode1", addr 10.194.194.38:4420
+
+$ lsblk
+......
+nvme12n1 259:13   0 894.3G  0 disk 
+nvme12n2 259:14   0 894.3G  0 disk 
+nvme13n1 259:15   0 894.3G  0 disk 
+nvme13n2 259:16   0 894.3G  0 disk 
+
+$ cat /sys/class/nvme/nvme12/transport
+tcp
+$ cat /sys/class/nvme/nvme13/transport
+rdma
+
+$ nvme list
+Node             SN                   Model                                    Namespace Usage                      Format           FW Rev  
+---------------- -------------------- ---------------------------------------- --------- -------------------------- ---------------- --------
+......
+/dev/nvme12n1    SPDK00000000000001   SPDK_Controller1                         1         960.20  GB / 960.20  GB    512   B +  0 B   21.10   
+/dev/nvme12n2    SPDK00000000000001   SPDK_Controller1                         2         960.20  GB / 960.20  GB    512   B +  0 B   21.10   
+/dev/nvme13n1    SPDK00000000000001   SPDK_Controller1                         1         960.20  GB / 960.20  GB    512   B +  0 B   21.10   
+/dev/nvme13n2    SPDK00000000000001   SPDK_Controller1                         2         960.20  GB / 960.20  GB    512   B +  0 B   21.10   
+
+$ nvme list-subsys
+......
+nvme-subsys12 - NQN=nqn.2016-06.io.spdk:cnode1
+\
+ +- nvme12 tcp traddr=10.194.194.38 trsvcid=4420 live 
+ +- nvme13 rdma traddr=10.194.194.38 trsvcid=4420 live 
+
+$ dd if=/dev/nvme12n1 bs=1024 count=10485760 of=/dev/null         # TCP
+10485760+0 records in
+10485760+0 records out
+10737418240 bytes (11 GB, 10 GiB) copied, 93.5867 s, 115 MB/s
+$ dd if=/dev/nvme13n1 bs=1024 count=10485760 of=/dev/null         # RDMA
+10485760+0 records in
+10485760+0 records out
+10737418240 bytes (11 GB, 10 GiB) copied, 13.2358 s, 811 MB/s
+
+$ dd if=/dev/zero bs=1024 count=10485760 of=/dev/nvme12n1         # TCP
+10485760+0 records in
+10485760+0 records out
+10737418240 bytes (11 GB, 10 GiB) copied, 381.727 s, 28.1 MB/s
+$ dd if=/dev/zero bs=1024 count=10485760 of=/dev/nvme13n1         # RDMA
+10485760+0 records in
+10485760+0 records out
+10737418240 bytes (11 GB, 10 GiB) copied, 135.035 s, 79.5 MB/s
+
+$ nvme disconnect -n "nqn.2016-06.io.spdk:cnode1"
+NQN:nqn.2016-06.io.spdk:cnode1 disconnected 2 controller(s)
+
+# dmesg
+nvme nvme12: Removing ctrl: NQN "nqn.2016-06.io.spdk:cnode1"
+nvme nvme13: Removing ctrl: NQN "nqn.2016-06.io.spdk:cnode1"
+

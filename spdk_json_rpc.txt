@@ -1,0 +1,450 @@
+
+
+https://spdk.io/doc/jsonrpc.html
+
+$ ~/spdk# scripts/rpc.py -h
+usage: rpc.py [options]
+
+SPDK RPC command line interface
+
+positional arguments:
+                        RPC methods
+    framework_start_init (start_subsystem_init)
+                        Start initialization of subsystems
+    framework_wait_init (wait_subsystem_init)
+                        Block until subsystems have been initialized
+    rpc_get_methods (get_rpc_methods)
+                        Get list of supported RPC methods
+    spdk_get_version (get_spdk_version)
+                        Get SPDK version
+    save_config         Write current (live) configuration of SPDK subsystems
+                        and targets to stdout.
+    load_config         Configure SPDK subsystems and targets using JSON RPC.
+    save_subsystem_config
+                        Write current (live) configuration of SPDK subsystem
+                        to stdout.
+    load_subsystem_config
+                        Configure SPDK subsystem using JSON RPC.
+    spdk_kill_instance (kill_instance)
+                        Send signal to instance
+    framework_monitor_context_switch (context_switch_monitor)
+                        Control whether the context switch monitor is enabled
+    framework_get_reactors
+                        Display list of all reactors
+    framework_set_scheduler
+                        Select thread scheduler that will be activated and its
+                        period (experimental)
+    framework_get_scheduler
+                        Display currently set scheduler and its properties.
+    bdev_set_options (set_bdev_options)
+                        Set options of bdev subsystem
+    bdev_examine        examine a bdev if it exists, or will examine it after
+                        it is created
+    bdev_wait_for_examine
+                        Report when all bdevs have been examined
+    bdev_compress_create (construct_compress_bdev)
+                        Add a compress vbdev
+    bdev_compress_delete (delete_compress_bdev)
+                        Delete a compress disk
+    bdev_compress_set_pmd (set_compress_pmd, compress_set_pmd)
+                        Set pmd option for a compress disk
+    bdev_compress_get_orphans
+                        Display list of orphaned compress bdevs.
+    bdev_crypto_create (construct_crypto_bdev)
+                        Add a crypto vbdev
+    bdev_crypto_delete (delete_crypto_bdev)
+                        Delete a crypto disk
+    bdev_ocf_create (construct_ocf_bdev)
+                        Add an OCF block device
+    bdev_ocf_delete (delete_ocf_bdev)
+                        Delete an OCF block device
+    bdev_ocf_get_stats (get_ocf_stats)
+                        Get statistics of chosen OCF block device
+    bdev_ocf_get_bdevs (get_ocf_bdevs)
+                        Get list of OCF devices including unregistered ones
+    bdev_ocf_set_cache_mode
+                        Set cache mode of OCF block device
+    bdev_malloc_create (construct_malloc_bdev)
+                        Create a bdev with malloc backend
+    bdev_malloc_delete (delete_malloc_bdev)
+                        Delete a malloc disk
+    bdev_null_create (construct_null_bdev)
+                        Add a bdev with null backend
+    bdev_null_delete (delete_null_bdev)
+                        Delete a null bdev
+    bdev_null_resize    Resize a null bdev
+    bdev_aio_create (construct_aio_bdev)
+                        Add a bdev with aio backend
+    bdev_aio_delete (delete_aio_bdev)
+                        Delete an aio disk
+    bdev_uring_create   Create a bdev with io_uring backend
+    bdev_uring_delete   Delete a uring bdev
+    bdev_nvme_set_options (set_bdev_nvme_options)
+                        Set options for the bdev nvme type. This is startup
+                        command.
+    bdev_nvme_set_hotplug (set_bdev_nvme_hotplug)
+                        Set hotplug options for bdev nvme type.
+    bdev_nvme_attach_controller (construct_nvme_bdev)
+                        Add bdevs with nvme backend
+    bdev_nvme_get_controllers (get_nvme_controllers)
+                        Display current NVMe controllers list or required NVMe
+                        controller
+    bdev_nvme_detach_controller (delete_nvme_controller)
+                        Detach an NVMe controller and delete any associated
+                        bdevs
+    bdev_nvme_reset_controller
+                        Reset an NVMe controller
+    bdev_nvme_cuse_register
+                        Register CUSE devices on NVMe controller
+    bdev_nvme_cuse_unregister
+                        Unregister CUSE devices on NVMe controller
+    bdev_zone_block_create
+                        Create virtual zone namespace device with block device
+                        backend
+    bdev_zone_block_delete
+                        Delete a virtual zone namespace device
+    bdev_rbd_register_cluster
+                        Add a Rados cluster with ceph rbd backend
+    bdev_rbd_unregister_cluster
+                        Unregister a Rados cluster object
+    bdev_rbd_get_clusters_info
+                        Display registered Rados Cluster names and related
+                        info
+    bdev_rbd_create (construct_rbd_bdev)
+                        Add a bdev with ceph rbd backend
+    bdev_rbd_delete (delete_rbd_bdev)
+                        Delete a rbd bdev
+    bdev_rbd_resize     Resize a rbd bdev
+    bdev_delay_create   Add a delay bdev on existing bdev
+    bdev_delay_delete   Delete a delay bdev
+    bdev_delay_update_latency
+                        Update one of the latency values for a given delay
+                        bdev
+    bdev_error_create (construct_error_bdev)
+                        Add bdev with error injection backend
+    bdev_error_delete (delete_error_bdev)
+                        Delete an error bdev
+    bdev_iscsi_create (construct_iscsi_bdev)
+                        Add bdev with iSCSI initiator backend
+    bdev_iscsi_delete (delete_iscsi_bdev)
+                        Delete an iSCSI bdev
+    bdev_pmem_create (construct_pmem_bdev)
+                        Add a bdev with pmem backend
+    bdev_pmem_delete (delete_pmem_bdev)
+                        Delete a pmem bdev
+    bdev_passthru_create (construct_passthru_bdev)
+                        Add a pass through bdev on existing bdev
+    bdev_passthru_delete (delete_passthru_bdev)
+                        Delete a pass through bdev
+    bdev_get_bdevs (get_bdevs)
+                        Display current blockdev list or required blockdev
+    bdev_get_iostat (get_bdevs_iostat)
+                        Display current I/O statistics of all the blockdevs or
+                        required blockdev.
+    bdev_enable_histogram (enable_bdev_histogram)
+                        Enable or disable histogram for specified bdev
+    bdev_get_histogram (get_bdev_histogram)
+                        Get histogram for specified bdev
+    bdev_set_qd_sampling_period (set_bdev_qd_sampling_period)
+                        Enable or disable tracking of a bdev's queue depth.
+    bdev_set_qos_limit (set_bdev_qos_limit)
+                        Set QoS rate limit on a blockdev
+    bdev_error_inject_error (bdev_inject_error)
+                        bdev inject error
+    bdev_nvme_apply_firmware (apply_firmware)
+                        Download and commit firmware to NVMe device
+    bdev_nvme_get_transport_statistics
+                        Get bdev_nvme poll group transport statistics
+    bdev_nvme_get_controller_health_info
+                        Display health log of the required NVMe bdev
+                        controller.
+    iscsi_set_options (set_iscsi_options)
+                        Set options of iSCSI subsystem
+    iscsi_set_discovery_auth (set_iscsi_discovery_auth)
+                        Set CHAP authentication for discovery session.
+    iscsi_create_auth_group (add_iscsi_auth_group)
+                        Create authentication group for CHAP authentication.
+    iscsi_delete_auth_group (delete_iscsi_auth_group)
+                        Delete an authentication group.
+    iscsi_auth_group_add_secret (add_secret_to_iscsi_auth_group)
+                        Add a secret to an authentication group.
+    iscsi_auth_group_remove_secret (delete_secret_from_iscsi_auth_group)
+                        Remove a secret from an authentication group.
+    iscsi_get_auth_groups (get_iscsi_auth_groups)
+                        Display current authentication group configuration
+    iscsi_get_portal_groups (get_portal_groups)
+                        Display current portal group configuration
+    iscsi_get_initiator_groups (get_initiator_groups)
+                        Display current initiator group configuration
+    iscsi_get_target_nodes (get_target_nodes)
+                        Display target nodes
+    iscsi_create_target_node (construct_target_node)
+                        Add a target node
+    iscsi_target_node_add_lun (target_node_add_lun)
+                        Add LUN to the target node
+    iscsi_target_node_set_auth (set_iscsi_target_node_auth)
+                        Set CHAP authentication for the target node
+    iscsi_target_node_add_pg_ig_maps (add_pg_ig_maps)
+                        Add PG-IG maps to the target node
+    iscsi_target_node_remove_pg_ig_maps (delete_pg_ig_maps)
+                        Delete PG-IG maps from the target node
+    iscsi_target_node_set_redirect
+                        Update redirect portal of the public portal group for
+                        the target node. Omit redirect host and port to clear
+                        previously set redirect settings.
+    iscsi_target_node_request_logout
+                        For the target node, request connections whose portal
+                        group tag match to logout, or request all connections
+                        if portal group tag is omitted.
+    iscsi_create_portal_group (add_portal_group)
+                        Add a portal group
+    iscsi_start_portal_group
+                        Start listening on portals if it is not started yet.
+    iscsi_create_initiator_group (add_initiator_group)
+                        Add an initiator group
+    iscsi_initiator_group_add_initiators (add_initiators_to_initiator_group)
+                        Add initiators to an existing initiator group
+    iscsi_initiator_group_remove_initiators (delete_initiators_from_initiator_group)
+                        Delete initiators from an existing initiator group
+    iscsi_delete_target_node (delete_target_node)
+                        Delete a target node
+    iscsi_delete_portal_group (delete_portal_group)
+                        Delete a portal group
+    iscsi_delete_initiator_group (delete_initiator_group)
+                        Delete an initiator group
+    iscsi_portal_group_set_auth
+                        Set CHAP authentication for discovery sessions
+                        specific for the portal group
+    iscsi_get_connections (get_iscsi_connections)
+                        Display iSCSI connections
+    iscsi_get_options (get_iscsi_global_params)
+                        Display iSCSI global parameters
+    scsi_get_devices (get_scsi_devices)
+                        Display SCSI devices
+    trace_enable_tpoint_group (enable_tpoint_group)
+                        enable trace on a specific tpoint group
+    trace_disable_tpoint_group (disable_tpoint_group)
+                        disable trace on a specific tpoint group
+    trace_get_tpoint_group_mask (get_tpoint_group_mask)
+                        get trace point group mask
+    log_set_flag (set_log_flag)
+                        set log flag
+    log_clear_flag (clear_log_flag)
+                        clear log flag
+    log_get_flags (get_log_flags)
+                        get log flags
+    log_set_level (set_log_level)
+                        set log level
+    log_get_level (get_log_level)
+                        get log level
+    log_set_print_level (set_log_print_level)
+                        set log print level
+    log_get_print_level (get_log_print_level)
+                        get log print level
+    bdev_lvol_create_lvstore (construct_lvol_store)
+                        Add logical volume store on base bdev
+    bdev_lvol_rename_lvstore (rename_lvol_store)
+                        Change logical volume store name
+    bdev_lvol_create (construct_lvol_bdev)
+                        Add a bdev with an logical volume backend
+    bdev_lvol_snapshot (snapshot_lvol_bdev)
+                        Create a snapshot of an lvol bdev
+    bdev_lvol_clone (clone_lvol_bdev)
+                        Create a clone of an lvol snapshot
+    bdev_lvol_rename (rename_lvol_bdev)
+                        Change lvol bdev name
+    bdev_lvol_inflate (inflate_lvol_bdev)
+                        Make thin provisioned lvol a thick provisioned lvol
+    bdev_lvol_decouple_parent (decouple_parent_lvol_bdev)
+                        Decouple parent of lvol
+    bdev_lvol_resize (resize_lvol_bdev)
+                        Resize existing lvol bdev
+    bdev_lvol_set_read_only (set_read_only_lvol_bdev)
+                        Mark lvol bdev as read only
+    bdev_lvol_delete (destroy_lvol_bdev)
+                        Destroy a logical volume
+    bdev_lvol_delete_lvstore (destroy_lvol_store)
+                        Destroy an logical volume store
+    bdev_lvol_get_lvstores (get_lvol_stores)
+                        Display current logical volume store list
+    bdev_raid_get_bdevs (get_raid_bdevs)
+                        This is used to list all the raid bdev names based on
+                        the input category requested. Category should be one
+                        of 'all', 'online', 'configuring' or 'offline'. 'all'
+                        means all the raid bdevs whether they are online or
+                        configuring or offline. 'online' is the raid bdev
+                        which is registered with bdev layer. 'configuring' is
+                        the raid bdev which does not have full configuration
+                        discovered yet. 'offline' is the raid bdev which is
+                        not registered with bdev as of now and it has
+                        encountered any error or user has requested to offline
+                        the raid bdev
+    bdev_raid_create (construct_raid_bdev)
+                        Create new raid bdev
+    bdev_raid_delete (destroy_raid_bdev)
+                        Delete existing raid bdev
+    bdev_split_create (construct_split_vbdev)
+                        Add given disk name to split config. If bdev with
+                        base_name name exist the split bdevs will be created
+                        right away, if not split bdevs will be created when
+                        base bdev became available (during examination
+                        process).
+    bdev_split_delete (destruct_split_vbdev)
+                        Delete split config with all created splits.
+    bdev_ftl_create (construct_ftl_bdev)
+                        Add FTL bdev
+    bdev_ftl_delete (delete_ftl_bdev)
+                        Delete FTL bdev
+    enable_vmd          Enable VMD enumeration
+    nbd_start_disk (start_nbd_disk)
+                        Export a bdev as an nbd disk
+    nbd_stop_disk (stop_nbd_disk)
+                        Stop an nbd disk
+    nbd_get_disks (get_nbd_disks)
+                        Display full or specified nbd device list
+    nvmf_set_max_subsystems (set_nvmf_target_max_subsystems)
+                        Set the maximum number of NVMf target subsystems
+    nvmf_set_config (set_nvmf_target_config)
+                        Set NVMf target config
+    nvmf_create_transport
+                        Create NVMf transport
+    nvmf_get_transports (get_nvmf_transports)
+                        Display nvmf transports or required transport
+    nvmf_get_subsystems (get_nvmf_subsystems)
+                        Display nvmf subsystems or required subsystem
+    nvmf_create_subsystem (nvmf_subsystem_create)
+                        Create an NVMe-oF subsystem
+    nvmf_delete_subsystem (delete_nvmf_subsystem)
+                        Delete a nvmf subsystem
+    nvmf_subsystem_add_listener
+                        Add a listener to an NVMe-oF subsystem
+    nvmf_subsystem_remove_listener
+                        Remove a listener from an NVMe-oF subsystem
+    nvmf_subsystem_listener_set_ana_state
+                        Set ANA state of a listener for an NVMe-oF subsystem
+    nvmf_subsystem_add_ns
+                        Add a namespace to an NVMe-oF subsystem
+    nvmf_subsystem_remove_ns
+                        Remove a namespace to an NVMe-oF subsystem
+    nvmf_subsystem_add_host
+                        Add a host to an NVMe-oF subsystem
+    nvmf_subsystem_remove_host
+                        Remove a host from an NVMe-oF subsystem
+    nvmf_subsystem_allow_any_host
+                        Allow any host to connect to the subsystem
+    nvmf_subsystem_get_controllers
+                        Display controllers of an NVMe-oF subsystem.
+    nvmf_subsystem_get_qpairs
+                        Display queue pairs of an NVMe-oF subsystem.
+    nvmf_subsystem_get_listeners
+                        Display listeners of an NVMe-oF subsystem.
+    nvmf_get_stats      Display current statistics for NVMf subsystem
+    nvmf_set_crdt       Set the 3 crdt (Command Retry Delay Time) values for
+                        NVMf subsystem. All values are in units of 100
+                        milliseconds (same as the NVM Express specification).
+    bdev_pmem_create_pool (create_pmem_pool)
+                        Create pmem pool
+    bdev_pmem_get_pool_info (pmem_pool_info)
+                        Display pmem pool info and check consistency
+    bdev_pmem_delete_pool (delete_pmem_pool)
+                        Delete pmem pool
+    framework_get_subsystems (get_subsystems)
+                        Print subsystems array in initialization order. Each
+                        subsystem entry contain (unsorted) array of subsystems
+                        it depends on.
+    framework_get_config (get_subsystem_config)
+                        Print subsystem configuration
+    vhost_controller_set_coalescing (set_vhost_controller_coalescing)
+                        Set vhost controller coalescing
+    vhost_create_scsi_controller (construct_vhost_scsi_controller)
+                        Add new vhost controller
+    vhost_scsi_controller_add_target (add_vhost_scsi_lun)
+                        Add lun to vhost controller
+    vhost_scsi_controller_remove_target (remove_vhost_scsi_target)
+                        Remove target from vhost controller
+    vhost_create_blk_controller (construct_vhost_blk_controller)
+                        Add a new vhost block controller
+    vhost_get_controllers (get_vhost_controllers)
+                        List all or specific vhost controller(s)
+    vhost_delete_controller (remove_vhost_controller)
+                        Delete a vhost controller
+    bdev_virtio_attach_controller (construct_virtio_dev)
+                        Attach virtio controller using provided transport type
+                        and device type. This will also create bdevs for any
+                        block devices connected to the controller (for
+                        example, SCSI devices for a virtio-scsi controller).
+                        Result is array of added bdevs.
+    bdev_virtio_scsi_get_devices (get_virtio_scsi_devs)
+                        List all Virtio-SCSI devices.
+    bdev_virtio_detach_controller (remove_virtio_bdev)
+                        Remove a Virtio device This will delete all bdevs
+                        exposed by this device
+    bdev_virtio_blk_set_hotplug
+                        Set hotplug options for bdev virtio_blk type.
+    ioat_scan_accel_engine (ioat_scan_copy_engine, scan_ioat_copy_engine)
+                        Enable IOAT accel engine offload.
+    idxd_scan_accel_engine
+                        Set config and enable idxd accel engine offload.
+    bdev_nvme_opal_init
+                        take ownership and activate
+    bdev_nvme_opal_revert
+                        Revert to default factory settings
+    bdev_opal_create    Create opal bdev on specified NVMe controller
+    bdev_opal_get_info  get opal locking range info for this bdev
+    bdev_opal_delete    delete a virtual opal bdev
+    bdev_opal_new_user  Add a user to opal bdev who can set lock state for
+                        this bdev
+    bdev_opal_set_lock_state
+                        set lock state for an opal bdev
+    bdev_nvme_send_cmd (send_nvme_cmd)
+                        NVMe passthrough cmd.
+    notify_get_types (get_notification_types)
+                        List available notifications that user can subscribe
+                        to.
+    notify_get_notifications (get_notifications)
+                        Get notifications
+    thread_get_stats    Display current statistics of all the threads
+    thread_set_cpumask  set the cpumask of the thread whose ID matches to the
+                        specified value. The thread may be migrated to one of
+                        the specified CPUs.
+    log_enable_timestamps
+                        Enable or disable timestamps.
+    thread_get_pollers  Display current pollers of all the threads
+    thread_get_io_channels
+                        Display current IO channels of all the threads
+    env_dpdk_get_mem_stats
+                        write the dpdk memory stats to a file.
+    blobfs_detect       Detect whether a blobfs exists on bdev
+    blobfs_create       Build a blobfs on bdev
+    blobfs_mount        Mount a blobfs on bdev to host path by FUSE
+    blobfs_set_cache_size
+                        Set cache size for blobfs
+    sock_impl_get_options
+                        Get options of socket layer implementation
+    sock_impl_set_options
+                        Set options of socket layer implementation
+    sock_set_default_impl
+                        Set the default sock implementation
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -s SERVER_ADDR        RPC domain socket path or IP address
+  -p PORT               RPC port number (if server_addr is IP address)
+  -t TIMEOUT            Timeout as a floating point number expressed in
+                        seconds waiting for response. Default: 60.0
+  -r CONN_RETRIES       Retry connecting to the RPC server N times with 0.2s
+                        interval. Default: 0
+  -v                    Set verbose mode to INFO
+  --verbose {DEBUG,INFO,ERROR}
+                        Set verbose level.
+  --dry-run             Display request and exit
+  --server              Start listening on stdin, parse each line as a regular
+                        rpc.py execution and create a separate connection for
+                        each command. Each command's output ends with either
+                        **STATUS=0 if the command succeeded or **STATUS=1 if
+                        it failed. --server is meant to be used in conjunction
+                        with bash coproc, where stdin and stdout are connected
+                        to pipes and can be used as a faster way to send RPC
+                        commands. If enabled, rpc.py must be executed without
+                        any other parameters.
+  --plugin RPC_PLUGIN   Module name of plugin with additional RPC commands

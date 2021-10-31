@@ -1,0 +1,72 @@
+
+$ scripts/iostat.py -h
+usage: iostat.py [-h] [-c] [-d] [-k] [-m] [-u] [-i INTERVAL]
+                 [-t TIME_IN_SECOND] [-s SERVER_ADDR] [-p PORT] [-b NAME]
+                 [-o TIMEOUT] [-v] [-x]
+
+SPDK iostats command line interface
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -c, --cpu-status      Only display cpu status
+  -d, --bdev-status     Only display Blockdev io stats
+  -k, --kb-display      Display drive stats in KiB
+  -m, --mb-display      Display drive stats in MiB
+  -u, --use-uptime      Use uptime or spdk ticks(default) as the interval
+                        variable to calculate iostat changes.
+  -i INTERVAL, --interval INTERVAL
+                        Time interval (in seconds) on which to poll I/O stats.
+                        Used in conjunction with -t
+  -t TIME_IN_SECOND, --time TIME_IN_SECOND
+                        The number of second to display stats before
+                        returning. Used in conjunction with -i
+  -s SERVER_ADDR, --server SERVER_ADDR
+                        RPC domain socket path or IP address
+  -p PORT, --port PORT  RPC port number (if server_addr is IP address)
+  -b NAME, --name NAME  Name of the Blockdev. Example: Nvme0n1
+  -o TIMEOUT, --timeout TIMEOUT
+                        Timeout as a floating point number expressed in
+                        seconds waiting for response. Default: 60.0
+  -v                    Set verbose mode to INFO
+  -x, --extended        Display extended statistics.
+
+$ scripts/iostat.py 
+cpu_stat:  user_stat  nice_stat  system_stat  iowait_stat  steal_stat  idle_stat
+           0.02%      0.00%      0.01%        0.00%        0.00%       99.97%   
+
+Device      tps   KB_read/s  KB_wrtn/s  KB_dscd/s  KB_read  KB_wrtn      KB_dscd
+my_nvme0n1  0.15  0.00       9.65       0.00       8784.00  28321832.00  0.00   
+my_nvme1n1  0.01  0.00       0.54       0.00       2164.00  1572536.00   0.00   
+
+$ scripts/rpc.py bdev_get_iostat
+{
+  "tick_rate": 2200000000,
+  "ticks": 6456477962927560,
+  "bdevs": [
+    {
+      "name": "my_nvme0n1",
+      "bytes_read": 8994816,
+      "num_read_ops": 742,
+      "bytes_written": 29001555968,
+      "num_write_ops": 449503,
+      "bytes_unmapped": 0,
+      "num_unmap_ops": 0,
+      "read_latency_ticks": 41636536,
+      "write_latency_ticks": 43210390176,
+      "unmap_latency_ticks": 0
+    },
+    {
+      "name": "my_nvme1n1",
+      "bytes_read": 2215936,
+      "num_read_ops": 110,
+      "bytes_written": 520839168,
+      "num_write_ops": 8085,
+      "bytes_unmapped": 0,
+      "num_unmap_ops": 0,
+      "read_latency_ticks": 6917500,
+      "write_latency_ticks": 769941920,
+      "unmap_latency_ticks": 0
+    }
+  ]
+}
+

@@ -1,0 +1,265 @@
+
+https://github.com/spdk/spdk/tree/master/examples/nvme/identify
+
+$ build/examples/identify -H
+./identify [options]
+options:
+ -r trid    remote NVMe over Fabrics target address
+    Format: 'key:value [key:value] ...'
+    Keys:
+     trtype      Transport type (e.g. RDMA)
+     adrfam      Address family (e.g. IPv4, IPv6)
+     traddr      Transport address (e.g. 192.168.100.8)
+     trsvcid     Transport service identifier (e.g. 4420)
+     subnqn      Subsystem NQN (default: nqn.2014-08.org.nvmexpress.discovery)
+     hostnqn     Host NQN
+    Example: -r 'trtype:RDMA adrfam:IPv4 traddr:192.168.100.8 trsvcid:4420'
+ -L, --logflag <flag>    enable log flag (all, json_util, log, nvme, opal, rpc, rpc_client, sock, trace, vmd)
+ -i         shared memory group ID
+ -p         core number in decimal to run this application which started from 0
+ -d         DPDK huge memory size in MB
+ -g         use single file descriptor for DPDK memory segments
+ -x         print hex dump of raw data
+ -z         For NVMe Zoned Namespaces, dump the full zone report (-z) or the first N entries (-z N)
+ -V         enumerate VMD
+ -H         show this usage
+
+$ build/examples/identify
+
+=====================================================
+NVMe Controller at 0000:8c:00.0 [144d:a804]
+=====================================================
+Controller Capabilities/Features
+================================
+Vendor ID:                             144d
+Subsystem Vendor ID:                   144d
+Serial Number:                         S3T1NX0K400207
+Model Number:                          MZQLW960HMJP-00005
+Firmware Version:                      CXV8202Q
+Recommended Arb Burst:                 2
+IEEE OUI Identifier:                   38 25 00
+Multi-path I/O
+  May have multiple subsystem ports:   No
+  May have multiple controllers:       No
+  Associated with SR-IOV VF:           No
+Max Data Transfer Size:                262144
+Max Number of Namespaces:              1
+NVMe Specification Version (VS):       1.2
+NVMe Specification Version (Identify): 1.2
+Maximum Queue Entries:                 16384
+Contiguous Queues Required:            Yes
+Arbitration Mechanisms Supported
+  Weighted Round Robin:                Supported
+  Vendor Specific:                     Not Supported
+Reset Timeout:                         20000 ms
+Doorbell Stride:                       4 bytes
+NVM Subsystem Reset:                   Supported
+Command Sets Supported
+  NVM Command Set:                     Supported
+Boot Partition:                        Not Supported
+Memory Page Size Minimum:              4096 bytes
+Memory Page Size Maximum:              134217728 bytes
+Persistent Memory Region:              Not Supported
+Optional Asynchronous Events Supported
+  Namespace Attribute Notices:         Not Supported
+  Firmware Activation Notices:         Not Supported
+128-bit Host Identifier:               Not Supported
+
+Controller Memory Buffer Support
+================================
+Supported:                             No
+
+Persistent Memory Region Support
+================================
+Supported:                             No
+
+Admin Command Set Attributes
+============================
+Security Send/Receive:                 Supported
+Format NVM:                            Supported
+Firmware Activate/Download:            Supported
+Namespace Management:                  Supported
+Device Self-Test:                      Not Supported
+Directives:                            Not Supported
+NVMe-MI:                               Not Supported
+Virtualization Management:             Not Supported
+Doorbell Buffer Config:                Not Supported
+Abort Command Limit:                   8
+Async Event Request Limit:             4
+Number of Firmware Slots:              3
+Firmware Slot 1 Read-Only:             Yes
+Firmware Update Granularity:           No Information Provided
+Per-Namespace SMART Log:               Yes
+Asymmetric Namespace Access Log Page:  Not Supported
+Command Effects Log Page:              Supported
+Get Log Page Extended Data:            Not Supported
+Telemetry Log Pages:                   Not Supported
+Error Log Page Entries Supported:      64
+Keep Alive:                            Not Supported
+
+NVM Command Set Attributes
+==========================
+Submission Queue Entry Size
+  Max:                       64
+  Min:                       64
+Completion Queue Entry Size
+  Max:                       16
+  Min:                       16
+Number of Namespaces:        1
+Compare Command:             Supported
+Write Uncorrectable Command: Supported
+Dataset Management Command:  Supported
+Write Zeroes Command:        Supported
+Set Features Save Field:     Supported
+Reservations:                Not Supported
+Timestamp:                   Not Supported
+Copy:                        Not Supported
+Volatile Write Cache:        Not Present
+Atomic Write Unit (Normal):  1
+Atomic Write Unit (PFail):   1
+Atomic Compare & Write Unit: 1
+Fused Compare & Write:       Not Supported
+Scatter-Gather List
+  SGL Command Set:           Not Supported
+  SGL Keyed:                 Not Supported
+  SGL Bit Bucket Descriptor: Not Supported
+  SGL Metadata Pointer:      Not Supported
+  Oversized SGL:             Not Supported
+  SGL Metadata Address:      Not Supported
+  SGL Offset:                Not Supported
+  Transport SGL Data Block:  Not Supported
+Replay Protected Memory Block:  Not Supported
+
+Firmware Slot Information
+=========================
+Active slot:                 1
+Slot 1 Firmware Revision:    CXV8202Q
+
+
+Commands Supported and Effects
+==============================
+Admin Commands
+--------------
+   Delete I/O Submission Queue (00h): Supported
+   Create I/O Submission Queue (01h): Supported
+                  Get Log Page (02h): Supported
+   Delete I/O Completion Queue (04h): Supported
+   Create I/O Completion Queue (05h): Supported
+                      Identify (06h): Supported
+                         Abort (08h): Supported
+                  Set Features (09h): Supported
+                  Get Features (0Ah): Supported
+    Asynchronous Event Request (0Ch): Supported
+          Namespace Management (0Dh): Supported NS-Cap-Change All-NS-Exclusive
+               Firmware Commit (10h): Supported
+       Firmware Image Download (11h): Supported
+          Namespace Attachment (15h): Supported NS-Inventory-Change
+                    Format NVM (80h): Supported LBA-Change All-NS-Exclusive
+                 Security Send (81h): Supported LBA-Change All-NS-Exclusive
+              Security Receive (82h): Supported Per-NS-Exclusive
+I/O Commands
+------------
+                         Flush (00h): Supported Per-NS-Exclusive
+                         Write (01h): Supported LBA-Change
+                          Read (02h): Supported
+           Write Uncorrectable (04h): Supported LBA-Change
+                       Compare (05h): Supported
+                  Write Zeroes (08h): Supported LBA-Change
+            Dataset Management (09h): Supported LBA-Change Per-NS-Exclusive
+
+Error Log
+=========
+Entry: 0
+Error Count:            0x79
+Submission Queue Id:    0x0
+Command Id:             0xe
+Phase Bit:              0
+Status Code:            0x2
+Status Code Type:       0x0
+Do Not Retry:           0
+Error Location:         0xffff
+LBA:                    0x0
+Namespace:              0x0
+Vendor Log Page:        0x0
+-----------
+Entry: 1
+
+......
+
+Arbitration
+===========
+Arbitration Burst:           4
+Low Priority Weight:         1
+Medium Priority Weight:      1
+High Priority Weight:        1
+
+Power Management
+================
+Number of Power States:      1
+Current Power State:         Power State #0
+Power State #0:  Max Power:   9.00 W
+Non-Operational Permissive Mode: Not Supported
+
+Health Information
+==================
+Critical Warnings:
+  Available Spare Space:     OK
+  Temperature:               OK
+  Device Reliability:        OK
+  Read Only:                 No
+  Volatile Memory Backup:    OK
+Current Temperature:         307 Kelvin (34 Celsius)
+Temperature Threshold:       358 Kelvin (85 Celsius)
+Available Spare:             100%
+Available Spare Threshold:   10%
+Life Percentage Used:        1%
+Data Units Read:             96111417
+Data Units Written:          37230657
+Host Read Commands:          7660650567
+Host Write Commands:         296268705
+Controller Busy Time:        7814 minutes
+Power Cycles:                477
+Power On Hours:              24933 hours
+Unsafe Shutdowns:            303
+Unrecoverable Media Errors:  0
+Lifetime Error Log Entries:  121
+Warning Temperature Time:    0 minutes
+Critical Temperature Time:   0 minutes
+Temperature Sensor 1:        307 Kelvin (34 Celsius)
+
+Number of Queues
+================
+Number of I/O Submission Queues:      8
+Number of I/O Completion Queues:      8
+
+Active Namespaces
+=================
+Namespace ID:1
+Error Recovery Timeout:                Unlimited
+Command Set Identifier:                NVM (00h)
+Deallocate:                            Supported
+Deallocated/Unwritten Error:           Not Supported
+Deallocated Read Value:                Unknown
+Deallocate in Write Zeroes:            Not Supported
+Deallocated Guard Field:               0xFFFF
+Flush:                                 Not Supported
+Reservation:                           Not Supported
+Namespace Sharing Capabilities:        Private
+Size (in LBAs):                        1875385008 (894GiB)
+Capacity (in LBAs):                    1875385008 (894GiB)
+Utilization (in LBAs):                 0 (0GiB)
+NGUID:                                 335431304B4002070025385800000001
+Thin Provisioning:                     Not Supported
+Per-NS Atomic Units:                   Yes
+  Atomic Write Unit (Normal):          8
+  Atomic Write Unit (PFail):           8
+  Atomic Boundary Size (Normal):       7
+  Atomic Boundary Size (PFail):        7
+  Atomic Boundary Offset:              0
+NGUID/EUI64 Never Reused:              No
+Number of LBA Formats:                 2
+Current LBA Format:                    LBA Format #00
+LBA Format #00: Data Size:   512  Metadata Size:     0
+LBA Format #01: Data Size:  4096  Metadata Size:     0
+
+

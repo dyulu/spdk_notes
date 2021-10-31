@@ -1,0 +1,121 @@
+
+$ ~/spdk/scripts/gen_nvme.sh -h
+Script for generating JSON configuration file for attaching
+local userspace NVMe drives.
+Usage: gen_nvme.sh [OPTIONS]
+
+-h, --help                     Print help and exit
+    --mode                     Generate 'local' or 'remote' NVMe JSON configuration. Default is 'local'.
+                               Remote needs --trid option to be present.
+    --trid                     Comma separated list target subsystem information containing transport type,
+                               IP addresses, port numbers and NQN names.
+                               Example: tcp:127.0.0.1:4420:nqn.2016-06.io.spdk:cnode1,tcp:127.0.0.1:4421:nqn.2016-06.io.spdk:cnode2
+    --json-with-subsystems     Wrap bdev subsystem JSON configuration with higher level 'subsystems' dictionary.
+
+$ ~/spdk/scripts/gen_nvme.sh --json-with-subsystems | jq .
+{
+  "subsystems": [
+    {
+      "subsystem": "bdev",
+      "config": [
+        {
+          "method": "bdev_nvme_attach_controller",
+          "params": {
+            "trtype": "PCIe",
+            "name": "Nvme0",
+            "traddr": "0000:18:00.0"
+          }
+        },
+        {
+          "method": "bdev_nvme_attach_controller",
+          "params": {
+            "trtype": "PCIe",
+            "name": "Nvme1",
+            "traddr": "0000:1a:00.0"
+          }
+        },
+        {
+          "method": "bdev_nvme_attach_controller",
+          "params": {
+            "trtype": "PCIe",
+            "name": "Nvme2",
+            "traddr": "0000:5e:00.0"
+          }
+        },
+        {
+          "method": "bdev_nvme_attach_controller",
+          "params": {
+            "trtype": "PCIe",
+            "name": "Nvme3",
+            "traddr": "0000:60:00.0"
+          }
+        },
+        {
+          "method": "bdev_nvme_attach_controller",
+          "params": {
+            "trtype": "PCIe",
+            "name": "Nvme4",
+            "traddr": "0000:61:00.0"
+          }
+        },
+        {
+          "method": "bdev_nvme_attach_controller",
+          "params": {
+            "trtype": "PCIe",
+            "name": "Nvme5",
+            "traddr": "0000:63:00.0"
+          }
+        },
+        {
+          "method": "bdev_nvme_attach_controller",
+          "params": {
+            "trtype": "PCIe",
+            "name": "Nvme6",
+            "traddr": "0000:86:00.0"
+          }
+        },
+        {
+          "method": "bdev_nvme_attach_controller",
+          "params": {
+            "trtype": "PCIe",
+            "name": "Nvme7",
+            "traddr": "0000:88:00.0"
+          }
+        },
+        {
+          "method": "bdev_nvme_attach_controller",
+          "params": {
+            "trtype": "PCIe",
+            "name": "Nvme8",
+            "traddr": "0000:8a:00.0"
+          }
+        },
+        {
+          "method": "bdev_nvme_attach_controller",
+          "params": {
+            "trtype": "PCIe",
+            "name": "Nvme9",
+            "traddr": "0000:8c:00.0"
+          }
+        },
+        {
+          "method": "bdev_nvme_attach_controller",
+          "params": {
+            "trtype": "PCIe",
+            "name": "Nvme10",
+            "traddr": "0000:d8:00.0"
+          }
+        },
+        {
+          "method": "bdev_nvme_attach_controller",
+          "params": {
+            "trtype": "PCIe",
+            "name": "Nvme11",
+            "traddr": "0000:da:00.0"
+          }
+        }
+      ]
+    }
+  ]
+}
+

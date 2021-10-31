@@ -1,0 +1,54 @@
+
+
+$ scripts/dpdk_mem_info.py -h
+usage: dpdk_mem_info.py [-h] [-f STATS_FILE] [-m HEAP] [-p MEMPOOL]
+                        [-z MEMZONE]
+
+Dumps memory stats for DPDK. If no arguments are provided, it dumps a general
+summary.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -f STATS_FILE         path to a dpdk memory stats file.
+  -m HEAP, --heap HEAP  Print detailed information about the given heap.
+  -p MEMPOOL, --mempool MEMPOOL
+                        Print detailed information about the given mempool.
+  -z MEMZONE, --memzone MEMZONE
+                        Print detailed information about the given memzone.
+
+$ scripts/dpdk_mem_info.py 
+Error, specified stats file does not exist. Please make sure you have run the env_dpdk_get_mem_stats rpc on the spdk app you want to analyze.
+$ scripts/rpc.py env_dpdk_get_mem_stats
+{
+  "filename": "/tmp/spdk_mem_dump.txt"
+}
+$ scripts/dpdk_mem_info.py -f /tmp/spdk_mem_dump.txt
+DPDK memory size 770.000000 MiB in 1 heap(s)
+1 heaps totaling size 770.000000 MiB
+  size:  770.000000 MiB heap id: 0
+end heaps----------
+12 mempools totaling size 755.491943 MiB
+  size:  200.758362 MiB name: PDU_immediate_data_Pool
+  size:  141.914612 MiB name: PDU_data_out_Pool
+  size:   76.499390 MiB name: bdev_io_16253
+  size:   72.062256 MiB name: buf_small_pool_16253
+  size:   68.013672 MiB name: buf_large_pool_16253
+  size:   51.508179 MiB name: evtpool_16253
+  size:   50.000366 MiB name: msgpool_16253
+  size:   49.777832 MiB name: spdk_nvmf_RDMA_data
+  size:   22.258362 MiB name: PDU_Pool
+  size:   20.008362 MiB name: SCSI_TASK_Pool
+  size:    2.664612 MiB name: spdk_nvmf_rdma_wr_data
+  size:    0.025940 MiB name: Session_Pool
+end mempools-------
+4 memzones totaling size 4.001465 MiB
+  size:    1.000366 MiB name: RG_ring_0_16253
+  size:    1.000366 MiB name: RG_ring_1_16253
+  size:    1.000366 MiB name: RG_ring_2_16253
+  size:    1.000366 MiB name: RG_ring_3_16253
+end memzones-------
+# For detailed info
+$ scripts/dpdk_mem_info.py -f /tmp/spdk_mem_dump.txt -m 0
+$ scripts/dpdk_mem_info.py -f /tmp/spdk_mem_dump.txt -p PDU_immediate_data_Pool
+$ scripts/dpdk_mem_info.py -f /tmp/spdk_mem_dump.txt -z RG_ring_0_16253
+

@@ -1,0 +1,134 @@
+
+==== NVMeoF using tcp hands-on
+https://www.linuxjournal.com/content/data-flash-part-iii-nvme-over-fabrics-using-tcp
+https://www.youtube.com/watch?v=e--uZItOY3U
+
+# 5.0 Linux kernel or later
+# NVME Support
+CONFIG_NVME_CORE=y
+CONFIG_BLK_DEV_NVME=y
+# CONFIG_NVME_MULTIPATH is not set
+CONFIG_NVME_FABRICS=m
+CONFIG_NVME_RDMA=m
+# CONFIG_NVME_FC is not set
+CONFIG_NVME_TCP=m
+CONFIG_NVME_TARGET=m
+CONFIG_NVME_TARGET_LOOP=m
+CONFIG_NVME_TARGET_RDMA=m
+# CONFIG_NVME_TARGET_FC is not set
+CONFIG_NVME_TARGET_TCP=m
+
+# Target node has multiple nvme drives; make the node nvme target for other nodes on the network to access the nvme drives
+# Note: instead of using the sysfs virtual filesystem, you could also export NVMe targets with the open-source utility, nvmet-cli
+$ lsblk                                        # Make sure there are NVMe devices available
+$ mount -t configfs none /sys/kernel/config/   # Mount the kernel user configuration filesystem; required by NVMe Target instructions
+$ cat /etc/modules-load.d/modules.conf         # kernel modules to load at boot time
+nvmet
+nvmet-tcp
+$ modprobe nvmet
+$ modprobe nvmet-tcp
+$ lsmod | grep nvme
+$ /sys/kernel/config/nvmet# tree
+.
+├── hosts
+├── ports
+└── subsystems
+
+$ /sys/kernel/config/nvmet/subsystems# mkdir my_nvme_target01                       # Create an NVMe Target subsystem to host your devices
+$ /sys/kernel/config/nvmet/subsystems# tree
+.
+└── my_nvme_target01
+    ├── allowed_hosts
+    ├── attr_allow_any_host
+    ├── attr_serial
+    ├── attr_version
+    └── namespaces
+$ /sys/kernel/config/nvmet/subsystems/my_nvme_target01# cat attr_allow_any_host
+0
+$ /sys/kernel/config/nvmet/subsystems/my_nvme_target01# echo 1 > attr_allow_any_host  # In reality, specify host machines by their NQN
+$ /sys/kernel/config/nvmet/subsystems/my_nvme_target01# cat attr_allow_any_host
+1
+$ /sys/kernel/config/nvmet/subsystems/my_nvme_target01# mkdir -p namespaces/1         # Define a subsystem namespace
+$ /sys/kernel/config/nvmet/subsystems/my_nvme_target01# tree
+.
+├── allowed_hosts
+├── attr_allow_any_host
+├── attr_serial
+├── attr_version
+└── namespaces
+    └── 1
+        ├── ana_grpid
+        ├── buffered_io
+        ├── device_nguid
+        ├── device_path
+        ├── device_uuid
+        └── enable
+$ /sys/kernel/config/nvmet/subsystems/my_nvme_target01/namespaces/1# cat device_path 
+(null)
+$ /sys/kernel/config/nvmet/subsystems/my_nvme_target01/namespaces/1# echo -n /dev/nvme0n1 > device_path
+$ cat device_path 
+/dev/nvme0n1
+$ /sys/kernel/config/nvmet/subsystems/my_nvme_target01/namespaces/1# cat enable 
+0
+$ /sys/kernel/config/nvmet/subsystems/my_nvme_target01/namespaces/1# echo 1 > enable
+$ /sys/kernel/config/nvmet/subsystems/my_nvme_target01/namespaces/1# cat enable 
+1
+$ /sys/kernel/config/nvmet/ports# mkdir 1                                              # Create an NVMe Target port to export the subsystem
+$ /sys/kernel/config/nvmet/ports# tree
+.
+└── 1
+    ├── addr_adrfam
+    ├── addr_traddr
+    ├── addr_treq
+    ├── addr_trsvcid
+    ├── addr_trtype
+    ├── ana_groups
+    │   └── 1
+    │       └── ana_state
+    ├── param_inline_data_size
+    ├── referrals
+    └── subsystems
+$ /sys/kernel/config/nvmet/ports/1# cat addr_traddr 
+
+$ /sys/kernel/config/nvmet/ports/1# echo 192.168.1.1 > addr_traddr                     # Use the IP addr of a preferred Ethernet interface port
+$ /sys/kernel/config/nvmet/ports/1# cat addr_traddr 
+192.168.1.1
+$ /sys/kernel/config/nvmet/ports/1# cat addr_trtype
+
+$ /sys/kernel/config/nvmet/ports/1# echo tcp > addr_trtype
+$ /sys/kernel/config/nvmet/ports/1# cat addr_trtype
+tcp
+$ /sys/kernel/config/nvmet/ports/1# cat addr_trsvcid
+
+$ sys/kernel/config/nvmet/ports/1# echo 4420 > addr_trsvcid
+$ /sys/kernel/config/nvmet/ports/1# cat addr_trsvcid
+4420
+$ /sys/kernel/config/nvmet/ports/1# cat addr_adrfam
+
+$ /sys/kernel/config/nvmet/ports/1# echo ipv4 > addr_adrfam
+$ /sys/kernel/config/nvmet/ports/1# cat addr_adrfam
+ipv4
+$ /sys/kernel/config/nvmet/ports/1# ln -s /sys/kernel/config/nvmet/subsystems/my_nvme_target01 /sys/kernel/config/nvmet/ports/1/subsystems/my_nvme_target01
+$ /sys/kernel/config/nvmet/ports/1# dmesg | grep nvmet                                # nvmet_tcp: enabling port 1 (192.168.1.1:4420)
+
+
+# On initiator node
+$ cat /etc/modules-load.d/modules.conf    # kernel modules to load at boot time
+nvmet    
+nvmet-tcp
+$ modprobe nvme
+$ modprobe nvme-tcp
+$ lsmod | grep nvme
+
+$ lsblk
+$ apt update
+$ apt install nvme-cli
+$ nvme discover -t tcp -a 192.168.1.1 -s 4420
+$ nvme connect -t tcp -n my_nvme_target01 -a 192.168.1.1 -s 4420
+$ lsblk                                                                                # Should show the exported NVMe device on the target
+$ nvme list
+$ nvme disconnect -d /dev/nvme0n1
+
+==== NVMeoF using RoCE hands-on
+https://www.linuxjournal.com/content/data-flash-part-ii-using-nvme-drives-and-creating-nvme-over-fabrics-network
+

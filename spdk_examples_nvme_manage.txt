@@ -1,0 +1,57 @@
+
+https://github.com/spdk/spdk/tree/master/examples/nvme/nvme_manage
+
+# After scripts/setup.sh runs, SPDK will claim the NVME devices and kernel name-cli tool will not see them any more
+
+build/examples/nvme_manage [options]
+options:
+ -i         shared memory group ID
+
+$ build/examples/nvme_manage 
+
+NVMe Management Options
+	[1: list controllers]
+	[2: create namespace]
+	[3: delete namespace]
+	[4: attach namespace to controller]
+	[5: detach namespace from controller]
+	[6: format namespace or controller]
+	[7: firmware update]
+	[8: opal]
+	[9: quit]
+
+1
+=====================================================
+NVMe Controller:	0000:18:00.00
+============================
+Controller Capabilities/Features
+Controller ID:		2
+Serial Number:		S3T1NX0K401176      
+
+Admin Command Set Attributes
+============================
+Namespace Manage And Attach:		Supported
+Namespace Format:			Supported
+
+NVM Command Set Attributes
+============================
+Namespace format operation applies to per namespace
+
+Namespace Attributes
+============================
+Namespace ID:1
+Size (in LBAs):              1875385008 (1788M)
+Capacity (in LBAs):          1875385008 (1788M)
+Utilization (in LBAs):       8 (0M)
+Format Progress Indicator:   Supported
+Number of LBA Formats:       2
+Current LBA Format:          LBA Format #00
+LBA Format #00: Data Size:   512  Metadata Size:     0
+LBA Format #01: Data Size:  4096  Metadata Size:     0
+Data Protection Capabilities:Not Supported
+Data Protection Setting:     N/A
+Multipath IO and Sharing:    Not Supported
+
+9
+Cleaning up...
+

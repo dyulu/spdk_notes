@@ -1,0 +1,451 @@
+
+==== SPDK v21.10; DPDK 21.08.0
+
+https://spdk.io/doc/getting_started.html
+
+git clone https://github.com/spdk/spdk
+cd spdk
+git submodule update --init
+sudo scripts/pkgdep.sh        # install the bare minimum dependencies required to build SPDK
+sudo scripts/pkgdep.sh --all  # install all dependencies needed by SPDK features
+scripts/pkgdep.sh --help      # see information on installing dependencies for optional components
+./configure                   # ./configure --with-rdma --with-nvme-cuse --with-fuse
+                              # --with-fuse: requires libfuse3, which doesn't work on Ubuntu 18.4 (4.15 kernel, only has version 2 of fuse)
+                              # Ubuntu 20.4: 5.4 kernel; Debian 10 (Buster): 4.19 kernel; Debian 11 (Bullseye): 5.10 kernel
+                              # libfuse3-3_3.10.5-1_amd64.deb: depends on libc6 (>= 2.32); Debian 10 has libc6 2.28-10
+                              # --with-nvme-cuse: requires libc.so.6 version `GLIBC_2.32' (required by /lib/x86_64-linux-gnu/libfuse3.so.3)
+                              # Two providers: verbs (used by default when RDMA is enabled or enabled explicitly using –with-rdma=verbs) and
+                              #                mlx5 Direct Verbs aka DV (enabled by –with-rdma=mlx5_dv). Using mlx5_dv requires libmlx5 installed on the system.
+make
+./configure --help            # configuration options
+./test/unit/unittest.sh       # confirm your build worked by running the unit tests
+
+spdk# ls app/
+iscsi_tgt  iscsi_top  Makefile  nvmf_tgt  spdk_dd  spdk_lspci  spdk_tgt  spdk_top  trace  trace_record  vhost
+
+==== SPDK configure
+
+$ git submodule update --init
+Submodule 'dpdk' (https://github.com/spdk/dpdk.git) registered for path 'dpdk'
+Submodule 'intel-ipsec-mb' (https://github.com/spdk/intel-ipsec-mb.git) registered for path 'intel-ipsec-mb'
+Submodule 'isa-l' (https://github.com/spdk/isa-l.git) registered for path 'isa-l'
+Submodule 'libvfio-user' (https://github.com/nutanix/libvfio-user.git) registered for path 'libvfio-user'
+Submodule 'ocf' (https://github.com/Open-CAS/ocf.git) registered for path 'ocf'
+Cloning into '/root/spdk/dpdk'...
+Cloning into '/root/spdk/intel-ipsec-mb'...
+Cloning into '/root/spdk/isa-l'...
+Cloning into '/root/spdk/libvfio-user'...
+Cloning into '/root/spdk/ocf'...
+Submodule path 'dpdk': checked out '19608c918c91a519c33edaabb3c7d31fdde30b46'
+Submodule path 'intel-ipsec-mb': checked out '93c2ddf877532f499a79e7111c9d9532cb44ceaf'
+Submodule path 'isa-l': checked out '2df39cf5f1b9ccaa2973f6ef273857e4dc46f0cf'
+Submodule path 'libvfio-user': checked out '46ed1dbd8e692ee53a544022dd70151f21a4e725'
+Submodule path 'ocf': checked out '05401cac64b6f8f4e7050ef404ad9c78353c7cdb'
+
+$ scripts/pkgdep.sh --help
+
+This script is intended to automate the installation of package dependencies to build SPDK.
+Please run this script as root user or with sudo -E.
+
+scripts/pkgdep.sh
+  -h --help
+  -a --all
+  -d --developer-tools        Install tools for developers (code styling, code coverage, etc.)
+  -p --pmem                   Additional dependencies for reduce, pmdk and pmdkobj
+  -f --fuse                   Additional dependencies for FUSE and NVMe-CUSE
+  -r --rdma                   Additional dependencies for RDMA transport in NVMe over Fabrics
+  -b --docs                   Additional dependencies for building docs
+  -u --uring                  Additional dependencies for io_uring
+
+./configure --help
+'configure' configures SPDK to compile on supported platforms.
+
+Usage: ./configure [OPTION]...
+
+Defaults for the options are specified in brackets.
+
+General:
+ -h, --help                Display this help and exit
+
+ --prefix=path             Configure installation prefix (default: /usr/local)
+ --target-arch=arch        Target build architecture. Must be a valid GNU arch. Default: native
+
+ --cross-prefix=prefix     Prefix for cross compilation (default: none)
+                           example: aarch64-linux-gnu
+
+ --enable-debug            Configure for debug builds
+ --enable-werror           Treat compiler warnings as errors
+ --enable-asan             Enable address sanitizer
+ --enable-ubsan            Enable undefined behavior sanitizer
+ --enable-coverage         Enable code coverage tracking
+ --enable-lto              Enable link-time optimization
+ --enable-pgo-capture      Enable generation of profile guided optimization data
+ --enable-pgo-use          Use previously captured profile guided optimization data
+ --enable-cet              Enable Intel Control-flow Enforcement Technology (CET)
+ --disable-tests           Disable building of functional tests
+ --disable-unit-tests      Disable building of unit tests
+ --disable-examples        Disable building of examples
+ --disable-apps            Disable building of apps
+
+Specifying Dependencies:
+--with-DEPENDENCY[=path]   Use the given dependency. Optionally, provide the
+                           path.
+--without-DEPENDENCY       Do not link to the given dependency. This may
+                           disable features and components.
+
+Valid dependencies are listed below.
+ dpdk                      Build against a custom dpdk version. By default, the dpdk
+                           submodule in spdk tree will be used.
+                           example: /usr/share/dpdk/x86_64-default-linuxapp-gcc
+ env                       Use an alternate environment implementation instead of DPDK.
+                           Implies --without-dpdk.
+ idxd                      Build the IDXD library and accel framework plug-in module.
+                           Disabled while experimental. Only built for x86 when enabled.
+ crypto                    Build vbdev crypto module.
+                           No path required.
+ fio                       Build fio_plugin.
+                           default: /usr/src/fio
+ vhost                     Build vhost target. Enabled by default.
+                           No path required.
+ virtio                    Build vhost initiator and virtio-pci bdev modules.
+                           No path required.
+ vfio-user                 Build custom vfio-user transport for NVMf target and NVMe initiator.
+                           example: /usr/src/libvfio-user
+ pmdk                      Build persistent memory bdev.
+                           example: /usr/share/pmdk
+ reduce                    Build vbdev compression module.
+                           No path required.
+ rbd                       Build Ceph RBD bdev module.
+                           No path required.
+ rdma                      Build RDMA transport for NVMf target and initiator.
+                           Accepts optional RDMA provider name. Can be "verbs" or "mlx5_dv".
+                           If no provider specified, "verbs" provider is used by default.
+ fc                        Build FC transport for NVMf target.
+                           If an argument is provided, it is considered a directory containing
+                           libufc.a and fc_lld.h. Otherwise the regular system paths will
+                           be searched.
+ shared                    Build spdk shared libraries.
+                           No path required.
+ iscsi-initiator           Build with iscsi bdev module.
+                           No path required.
+ vtune                     Required to profile I/O under Intel VTune Amplifier XE.
+                           example: /opt/intel/vtune_amplifier_xe_version
+ ocf                       Build OCF library and bdev module.
+                           If argument is directory, interpret it as root of OCF repo
+                           If argument is file, interpret it as compiled OCF lib
+                           If no argument is specified, OCF git submodule is used by default
+                           example: /usr/src/ocf/
+ isal                      Build with ISA-L. Enabled by default on x86 and aarch64 architectures.
+                           No path required.
+ uring                     Build I/O uring bdev or socket module.
+                           If an argument is provided, it is considered a directory containing
+                           liburing.a and io_uring.h. Otherwise the regular system paths will
+                           be searched.
+ fuse                      Build FUSE components for mounting a blobfs filesystem.
+                           No path required.
+ nvme-cuse                 Build NVMe driver with support for CUSE-based character devices.
+                           No path required.
+ raid5                     Build with bdev_raid module RAID5 support.
+                           No path required.
+ wpdk                      Build using WPDK to provide support for Windows (experimental).
+                           The argument must be a directory containing lib and include.
+ usdt                      Build with userspace DTrace probes enabled.
+                           No path required.
+
+Environment variables:
+
+CC                         C compiler
+CFLAGS                     C compiler flags
+CXX                        C++ compiler
+CXXFLAGS                   C++ compiler flags
+LD                         Linker
+LDFLAGS                    Linker flags
+DESTDIR                    Destination for 'make install'
+
+~/spdk# scripts/setup.sh help
+Helper script for allocating hugepages and binding NVMe, I/OAT, VMD and Virtio devices
+to a generic VFIO kernel driver. If VFIO is not available on the system, this script
+will fall back to UIO. NVMe and Virtio devices with active mountpoints will be ignored.
+All hugepage operations use default hugepage size on the system (hugepagesz).
+Usage: setup.sh [config|reset|status|cleanup|help]
+
+[config|reset|status|cleanup|help] - as following:
+config            Default mode. Allocate hugepages and bind PCI devices.
+cleanup           Remove any orphaned files that can be left in the system after SPDK application exit
+reset             Rebind PCI devices back to their original drivers.
+                  Also cleanup any leftover spdk files/resources.
+                  Hugepage memory size will remain unchanged.
+status            Print status of all SPDK-compatible devices on the system.
+help              Print this help message.
+
+The following environment variables can be specified.
+HUGEMEM           Size of hugepage memory to allocate (in MB). 2048 by default.
+                  For NUMA systems, the hugepages will be distributed on node0 by
+                  default.
+HUGE_EVEN_ALLOC   If set to 'yes', hugepages will be evenly distributed across all
+                  system's NUMA nodes (effectively ignoring anything set in HUGENODE).
+                  Uses kernel's default for hugepages size.
+NRHUGE            Number of hugepages to allocate. This variable overwrites HUGEMEM.
+HUGENODE          Specific NUMA node to allocate hugepages on. Multiple nodes can be
+                  separated with comas. By default, NRHUGE will be applied on each node.
+                  Hugepages can be defined per node with e.g.:
+                  HUGENODE='nodes_hp[0]=2048,nodes_hp[1]=512,2' - this will allocate
+                  2048 pages for node0, 512 for node1 and default NRHUGE for node2.
+HUGEPGSZ          Size of the hugepages to use in kB. If not set, kernel's default
+                  setting is used.
+CLEAR_HUGE        If set to 'yes', the attempt to remove hugepages from all nodes will
+                  be made prior to allocation.
+PCI_ALLOWED
+PCI_BLOCKED       Whitespace separated list of PCI devices (NVMe, I/OAT, VMD, Virtio).
+                  Each device must be specified as a full PCI address.
+                  E.g. PCI_ALLOWED="0000:01:00.0 0000:02:00.0"
+                  To block all PCI devices use a non-valid address.
+                  E.g. PCI_BLOCKED="none"
+                  If PCI_ALLOWED and PCI_BLOCKED are empty or unset, all PCI devices
+                  will be bound.
+                  Each device in PCI_BLOCKED will be ignored (driver won't be changed).
+                  PCI_BLOCKED has precedence over PCI_ALLOWED.
+TARGET_USER       User that will own hugepage mountpoint directory and vfio groups.
+                  By default the current user will be used.
+DRIVER_OVERRIDE   Disable automatic vfio-pci/uio_pci_generic selection and forcefully
+                  bind devices to the given driver.
+                  E.g. DRIVER_OVERRIDE=uio_pci_generic or DRIVER_OVERRIDE=/home/public/dpdk/build/kmod/igb_uio.ko
+PCI_BLOCK_SYNC_ON_RESET
+                  If set in the environment, the attempt to wait for block devices associated
+                  with given PCI device will be made upon reset
+
+~/spdk/build# tree
+.
+|-- bin
+|   |-- iscsi_tgt
+|   |-- iscsi_top
+|   |-- nvmf_tgt
+|   |-- spdk_dd
+|   |-- spdk_lspci
+|   |-- spdk_tgt
+|   |-- spdk_top
+|   |-- spdk_trace
+|   |-- spdk_trace_record
+|   `-- vhost
+|-- examples
+|   |-- abort
+|   |-- accel_perf
+|   |-- arbitration
+|   |-- blobcli
+|   |-- cmb_copy
+|   |-- hello_bdev
+|   |-- hello_blob
+|   |-- hello_sock
+|   |-- hello_world
+|   |-- hotplug
+|   |-- identify
+|   |-- interrupt_tgt
+|   |-- ioat_perf
+|   |-- led
+|   |-- lsvmd
+|   |-- nvme_manage
+|   |-- nvmf
+|   |-- perf
+|   |-- pmr_persistence
+|   |-- reconnect
+|   |-- verify
+|   `-- zipf
+|-- fio
+
+~/spdk# tree
+.
+├── include
+│   └── spdk
+│       └── pci_ids.h
+├── scripts
+│   ├── bash-completion
+│   │   └── spdk
+│   ├── ceph
+│   │   ├── ceph.conf
+│   │   ├── start.sh
+│   │   └── stop.sh
+│   ├── check_format.sh
+│   ├── common.sh
+│   ├── config_converter.py
+│   ├── core-collector.sh
+│   ├── detect_cc.sh
+│   ├── dpdk_mem_info.py
+│   ├── eofnl
+│   ├── fio.py
+│   ├── gdb_macros.py
+│   ├── genconfig.py
+│   ├── gen_ftl.sh
+│   ├── gen_nvme.sh
+│   ├── histogram.py
+│   ├── iostat.py
+│   ├── pc_libs.sh
+│   ├── pc_modules.sh
+│   ├── pc.sh
+│   ├── perf
+│   │   ├── nvme
+│   │   │   ├── fio_test.conf
+│   │   │   ├── README
+│   │   │   ├── run_fio_test.py
+│   │   │   └── run_fio_test.sh
+│   │   ├── nvmf
+│   │   │   ├── common.py
+│   │   │   ├── config.json
+│   │   │   ├── README.md
+│   │   │   └── run_nvmf.py
+│   │   └── vhost
+│   │       ├── fio_test.conf
+│   │       └── run_vhost_test.py
+│   ├── pkgdep
+│   │   ├── arch.sh
+│   │   ├── centos.sh
+│   │   ├── clear-linux-os.sh
+│   │   ├── common.sh
+│   │   ├── debian.sh
+│   │   ├── fedora.sh
+│   │   ├── freebsd.sh
+│   │   ├── requirements.txt
+│   │   ├── rhel.sh
+│   │   ├── sles.sh
+│   │   └── ubuntu.sh
+│   ├── pkgdep.sh
+│   ├── posix.txt
+│   ├── prep_benchmarks.sh
+│   ├── qat_setup.sh
+│   ├── rpc
+│   │   ├── app.py
+│   │   ├── bdev.py
+│   │   ├── blobfs.py
+│   │   ├── client.py
+│   │   ├── env_dpdk.py
+│   │   ├── helpers.py
+│   │   ├── idxd.py
+│   │   ├── __init__.py
+│   │   ├── ioat.py
+│   │   ├── iscsi.py
+│   │   ├── log.py
+│   │   ├── lvol.py
+│   │   ├── nbd.py
+│   │   ├── net.py
+│   │   ├── notify.py
+│   │   ├── nvme.py
+│   │   ├── nvmf.py
+│   │   ├── pmem.py
+│   │   ├── __pycache__
+│   │   │   ├── app.cpython-37.pyc
+│   │   │   ├── bdev.cpython-37.pyc
+│   │   │   ├── blobfs.cpython-37.pyc
+│   │   │   ├── client.cpython-37.pyc
+│   │   │   ├── env_dpdk.cpython-37.pyc
+│   │   │   ├── helpers.cpython-37.pyc
+│   │   │   ├── idxd.cpython-37.pyc
+│   │   │   ├── __init__.cpython-37.pyc
+│   │   │   ├── ioat.cpython-37.pyc
+│   │   │   ├── iscsi.cpython-37.pyc
+│   │   │   ├── log.cpython-37.pyc
+│   │   │   ├── lvol.cpython-37.pyc
+│   │   │   ├── nbd.cpython-37.pyc
+│   │   │   ├── net.cpython-37.pyc
+│   │   │   ├── notify.cpython-37.pyc
+│   │   │   ├── nvme.cpython-37.pyc
+│   │   │   ├── nvmf.cpython-37.pyc
+│   │   │   ├── pmem.cpython-37.pyc
+│   │   │   ├── sock.cpython-37.pyc
+│   │   │   ├── subsystem.cpython-37.pyc
+│   │   │   ├── trace.cpython-37.pyc
+│   │   │   ├── vhost.cpython-37.pyc
+│   │   │   └── vmd.cpython-37.pyc
+│   │   ├── sock.py
+│   │   ├── subsystem.py
+│   │   ├── trace.py
+│   │   ├── vhost.py
+│   │   └── vmd.py
+│   ├── rpc_http_proxy.py
+│   ├── rpc.py
+│   ├── rxe_cfg_small.sh
+│   ├── setup.sh
+│   ├── spdkcli
+│   │   ├── __init__.py
+│   │   ├── ui_node_iscsi.py
+│   │   ├── ui_node_nvmf.py
+│   │   ├── ui_node.py
+│   │   └── ui_root.py
+│   ├── spdkcli.py
+│   ├── sync_dev_uevents.sh
+│   └── vagrant
+│       ├── autorun-spdk.conf
+│       ├── create_nvme_img.sh
+│       ├── create_vbox.sh
+│       ├── local.conf
+│       ├── README.md
+│       ├── run-autorun.sh
+│       ├── update.sh
+│       └── Vagrantfile
+......
+
+==== SPDK running on a node
+
+~/spdk# scripts/setup.sh    # Default: config; use reset to revert
+0000:80:04.7 (8086 2021): ioatdma -> uio_pci_generic
+0000:80:04.6 (8086 2021): ioatdma -> uio_pci_generic
+0000:8c:00.0 (144d a804): nvme -> uio_pci_generic
+0000:86:00.0 (144d a804): nvme -> uio_pci_generic
+
+~/spdk# scripts/setup.sh status
+Hugepages
+node     hugesize     free /  total
+node0   1048576kB        0 /      0
+node0      2048kB     1024 /   1024
+node1   1048576kB        0 /      0
+node1      2048kB        0 /      0
+
+Type     BDF             Vendor Device NUMA    Driver           Device     Block devices
+I/OAT    0000:80:04.6    8086   2021   1       uio_pci_generic  -          -
+I/OAT    0000:80:04.7    8086   2021   1       uio_pci_generic  -          -
+NVMe     0000:86:00.0    144d   a804   1       uio_pci_generic  -          -
+NVMe     0000:8c:00.0    144d   a804   1       uio_pci_generic  -          -
+
+~/spdk$ ls /dev/hugepages    # After SPDK runs, will see entries here
+~/spdk$  cat /proc/meminfo |grep HugePages
+AnonHugePages:      6144 kB
+ShmemHugePages:        0 kB
+FileHugePages:         0 kB
+HugePages_Total:    1024
+HugePages_Free:     1024
+HugePages_Rsvd:        0
+HugePages_Surp:        0
+
+~/spdk# tree /sys/bus/pci/drivers/nvme
+/sys/bus/pci/drivers/nvme
+├── bind
+├── module -> ../../../../module/nvme
+├── new_id
+├── remove_id
+├── uevent
+└── unbind
+
+~/spdk# tree /sys/bus/pci/drivers/uio_pci_generic
+/sys/bus/pci/drivers/uio_pci_generic
+├── 0000:80:04.6 -> ../../../../devices/pci0000:80/0000:80:04.6
+├── 0000:80:04.7 -> ../../../../devices/pci0000:80/0000:80:04.7
+├── 0000:86:00.0 -> ../../../../devices/pci0000:85/0000:85:00.0/0000:86:00.0
+├── 0000:8c:00.0 -> ../../../../devices/pci0000:85/0000:85:03.0/0000:8c:00.0
+├── bind
+├── module -> ../../../../module/uio_pci_generic
+├── new_id
+├── remove_id
+├── uevent
+└── unbind
+
+$ apt-cache search libibverbs
+ibverbs-providers - User space provider drivers for libibverbs
+ibverbs-utils - Examples for the libibverbs library
+libibverbs-dev - Development files for the libibverbs library
+libibverbs1 - Library for direct userspace use of RDMA (InfiniBand/iWARP)
+$ apt-get install libibverbs1
+$ apt-get install librdmacm1
+$ apt-get install libaio1
+
+~/spdk/build/examples/# ./identify
+
+~/spdk/# build/bin/spdk_tgt
+
