@@ -1,0 +1,537 @@
+==== https://github.com/facebook/rocksdb/wiki/
+
+RocksDB is a C++ library to store keys and values, which are arbitrarily-sized byte streams.
+
+The maximum recommended sizes for key and value are 8MB and 3GB respectively.
+
+RocksDB organizes all data in sorted order and the common operations are Get(key), NewIterator(), Put(key, val), Delete(key), and SingleDelete(key).
+
+SST (Sorted Sequence Table) File (Data file / SST table): persistent files storing data, where keys are usually organized in sorted order so that a key or iterating position can be identified through a binary search.
+
+==== Tools
+
+# Required libraries
+$ apt install libgflags-dev    # a library that handles command line flags processing
+$ apt install libsnappy-dev
+$ apt install zlib1g-dev
+$ apt install libbz2-dev
+$ apt install liblz4-dev
+$ apt install libzstd-dev
+
+git clone https://github.com/facebook/rocksdb.git
+cd rocksdb
+make -j`nproc` db_bench 
+make -j`nproc` rocksdb_dump
+make -j`nproc` rocksdb_undump
+make -j`nproc` sst_dump
+make -j`nproc` ldb
+
+# If RocksDB path is /tmp/rocksdb/
+./rocksdb_dump -db_path /tmp/rocksdb/ -dump_location rocksdb_dump0
+./sst_dump --file=/tmp/rocksdb --show_properties --command=none
+./sst_dump --file=/tmp/rocksdb --command=raw
+./ldb --db=/tmp/rocksdb/ scan
+./ldb --db=/tmp/rocksdb/ get <key>
+
+$ ./rocksdb_dump --help
+rocksdb_dump: Warning: SetUsageMessage() never called
+
+  Flags from /build/gflags-2.2.2/src/gflags.cc:
+    -flagfile (load flags from file) type: string default: ""
+    -fromenv (set flags from the environment [use 'export FLAGS_flag1=value'])
+      type: string default: ""
+    -tryfromenv (set flags from the environment if present) type: string
+      default: ""
+    -undefok (comma-separated list of flag names that it is okay to specify on
+      the command line even if the program does not define a flag with that
+      name.  IMPORTANT: flags in this list that have arguments MUST use the
+      flag=value format) type: string default: ""
+
+  Flags from /build/gflags-2.2.2/src/gflags_completions.cc:
+    -tab_completion_columns (Number of columns to use in output for tab
+      completion) type: int32 default: 80
+    -tab_completion_word (If non-empty, HandleCommandLineCompletions() will
+      hijack the process and attempt to do bash-style command line flag
+      completion on this value.) type: string default: ""
+
+  Flags from /build/gflags-2.2.2/src/gflags_reporting.cc:
+    -help (show help on all flags [tip: all flags can have two dashes])
+      type: bool default: false currently: true
+    -helpfull (show help on all flags -- same as -help) type: bool
+      default: false
+    -helpmatch (show help on modules whose name contains the specified substr)
+      type: string default: ""
+    -helpon (show help on the modules named by this flag value) type: string
+      default: ""
+    -helppackage (show help on all modules in the main package) type: bool
+      default: false
+    -helpshort (show help on only the main module for this program) type: bool
+      default: false
+    -helpxml (produce an xml version of help) type: bool default: false
+    -version (show version and build info and exit) type: bool default: false
+
+
+
+  Flags from tools/dump/rocksdb_dump.cc:
+    -anonymous (Remove information like db path, creation time from dumped
+      file) type: bool default: false
+    -db_options (Options string used to open the database that will be dumped)
+      type: string default: ""
+    -db_path (Path to the db that will be dumped) type: string default: ""
+    -dump_location (Path to where the dump file location) type: string
+      default: ""
+
+$ ./rocksdb_undump --help
+rocksdb_undump: Warning: SetUsageMessage() never called
+
+  Flags from /build/gflags-2.2.2/src/gflags.cc:
+    -flagfile (load flags from file) type: string default: ""
+    -fromenv (set flags from the environment [use 'export FLAGS_flag1=value'])
+      type: string default: ""
+    -tryfromenv (set flags from the environment if present) type: string
+      default: ""
+    -undefok (comma-separated list of flag names that it is okay to specify on
+      the command line even if the program does not define a flag with that
+      name.  IMPORTANT: flags in this list that have arguments MUST use the
+      flag=value format) type: string default: ""
+
+  Flags from /build/gflags-2.2.2/src/gflags_completions.cc:
+    -tab_completion_columns (Number of columns to use in output for tab
+      completion) type: int32 default: 80
+    -tab_completion_word (If non-empty, HandleCommandLineCompletions() will
+      hijack the process and attempt to do bash-style command line flag
+      completion on this value.) type: string default: ""
+
+  Flags from /build/gflags-2.2.2/src/gflags_reporting.cc:
+    -help (show help on all flags [tip: all flags can have two dashes])
+      type: bool default: false currently: true
+    -helpfull (show help on all flags -- same as -help) type: bool
+      default: false
+    -helpmatch (show help on modules whose name contains the specified substr)
+      type: string default: ""
+    -helpon (show help on the modules named by this flag value) type: string
+      default: ""
+    -helppackage (show help on all modules in the main package) type: bool
+      default: false
+    -helpshort (show help on only the main module for this program) type: bool
+      default: false
+    -helpxml (produce an xml version of help) type: bool default: false
+    -version (show version and build info and exit) type: bool default: false
+
+
+
+  Flags from tools/dump/rocksdb_undump.cc:
+    -compact (Compact the db after loading the dumped file) type: bool
+      default: false
+    -db_options (Options string used to open the database that will be loaded)
+      type: string default: ""
+    -db_path (Path to the db that we will undump the file into) type: string
+      default: ""
+    -dump_location (Path to the dump file that will be loaded) type: string
+      default: ""
+
+$ ./sst_dump -h
+Unrecognized argument '-h'
+
+sst_dump --file=<data_dir_OR_sst_file> [--command=check|scan|raw|recompress|identify]
+    --file=<data_dir_OR_sst_file>
+      Path to SST file or directory containing SST files
+
+    --env_uri=<uri of underlying Env>
+      URI of underlying Env
+
+    --command=check|scan|raw|verify|identify
+        check: Iterate over entries in files but don't print anything except if an error is encountered (default command)
+        scan: Iterate over entries in files and print them to screen
+        raw: Dump all the table contents to <file_name>_dump.txt
+        verify: Iterate all the blocks in files verifying checksum to detect possible corruption but don't print anything except if a corruption is encountered
+        recompress: reports the SST file size if recompressed with different
+                    compression types
+        identify: Reports a file is a valid SST file or lists all valid SST files under a directory
+
+    --output_hex
+      Can be combined with scan command to print the keys and values in Hex
+
+    --decode_blob_index
+      Decode blob indexes and print them in a human-readable format during scans.
+
+    --from=<user_key>
+      Key to start reading from when executing check|scan
+
+    --to=<user_key>
+      Key to stop reading at when executing check|scan
+
+    --prefix=<user_key>
+      Returns all keys with this prefix when executing check|scan
+      Cannot be used in conjunction with --from
+
+    --read_num=<num>
+      Maximum number of entries to read when executing check|scan
+
+    --verify_checksum
+      Verify file checksum when executing check|scan
+
+    --input_key_hex
+      Can be combined with --from and --to to indicate that these values are encoded in Hex
+
+    --show_properties
+      Print table properties after iterating over the file when executing
+      check|scan|raw|identify
+
+    --set_block_size=<block_size>
+      Can be combined with --command=recompress to set the block size that will
+      be used when trying different compression algorithms
+
+    --compression_types=<comma-separated list of CompressionType members, e.g.,
+      kSnappyCompression>
+      Can be combined with --command=recompress to run recompression for this
+      list of compression types
+
+    --parse_internal_key=<0xKEY>
+      Convenience option to parse an internal key on the command line. Dumps the
+      internal key in hex format {'key' @ SN: type}
+
+    --compression_level_from=<compression_level>
+      Compression level to start compressing when executing recompress. One compression type
+      and compression_level_to must also be specified
+
+    --compression_level_to=<compression_level>
+      Compression level to stop compressing when executing recompress. One compression type
+      and compression_level_from must also be specified
+
+    --compression_max_dict_bytes=<uint32_t>
+      Maximum size of dictionary used to prime the compression library
+
+    --compression_zstd_max_train_bytes=<uint32_t>
+      Maximum size of training data passed to zstd's dictionary trainer
+
+$ ./ldb --help
+ldb - RocksDB Tool
+
+commands MUST specify --db=<full_path_to_db_directory> when necessary
+
+commands can optionally specify --env_uri=<uri_of_environment> if necessary
+
+The following optional parameters control if keys/values are input/output as hex or as plain strings:
+  --key_hex : Keys are input/output as hex
+  --value_hex : Values are input/output as hex
+  --hex : Both keys and values are input/output as hex
+
+The following optional parameters control the database internals:
+  --column_family=<string> : name of the column family to operate on. default: default column family
+  --ttl with 'put','get','scan','dump','query','batchput' : DB supports ttl and value is internally timestamp-suffixed
+  --try_load_options : Try to load option file from DB.
+  --disable_consistency_checks : Set options.force_consistency_checks = false.
+  --ignore_unknown_options : Ignore unknown options when loading option file.
+  --bloom_bits=<int,e.g.:14>
+  --fix_prefix_len=<int,e.g.:14>
+  --compression_type=<no|snappy|zlib|bzip2|lz4|lz4hc|xpress|zstd>
+  --compression_max_dict_bytes=<int,e.g.:16384>
+  --block_size=<block_size_in_bytes>
+  --auto_compaction=<true|false>
+  --db_write_buffer_size=<int,e.g.:16777216>
+  --write_buffer_size=<int,e.g.:4194304>
+  --file_size=<int,e.g.:2097152>
+
+
+Data Access Commands:
+  put <key> <value> [--create_if_missing] [--ttl]
+  get <key> [--ttl]
+  batchput <key> <value> [<key> <value>] [..] [--create_if_missing] [--ttl]
+  scan [--from] [--to]  [--ttl] [--timestamp] [--max_keys=<N>q]  [--start_time=<N>:- is inclusive] [--end_time=<N>:- is exclusive] [--no_value]
+  delete <key>
+  deleterange <begin key> <end key>
+  query [--ttl]
+    Starts a REPL shell.  Type help for list of available commands.
+  approxsize [--from] [--to] 
+  checkconsistency
+  list_file_range_deletes [--max_keys=<N>] : print tombstones in SST files.
+
+
+Admin Commands:
+  dump_wal --walfile=<write_ahead_log_file_path> [--header]  [--print_value]  [--write_committed=true|false] 
+  compact [--from] [--to] 
+  reduce_levels --new_levels=<New number of levels> [--print_old_levels]
+  change_compaction_style --old_compaction_style=<Old compaction style: 0 for level compaction, 1 for universal compaction> --new_compaction_style=<New compaction style: 0 for level compaction, 1 for universal compaction>
+  dump [--from] [--to]  [--ttl] [--max_keys=<N>] [--timestamp] [--count_only] [--count_delim=<char>] [--stats] [--bucket=<N>] [--start_time=<N>:- is inclusive] [--end_time=<N>:- is exclusive] [--path=<path_to_a_file>]
+  load [--create_if_missing] [--disable_wal] [--bulk_load] [--compact]
+  manifest_dump [--verbose] [--json] [--path=<path_to_manifest_file>]
+  file_checksum_dump [--path=<path_to_manifest_file>]
+  list_column_families
+  create_column_family --db=<db_path> <new_column_family_name>
+  drop_column_family --db=<db_path> <column_family_name_to_drop>
+  dump_live_files
+  idump [--from] [--to]  [--input_key_hex] [--max_keys=<N>] [--count_only] [--count_delim=<char>] [--stats]
+  repair
+  backup [--backup_env_uri]  [--backup_dir]  [--num_threads]  [--stderr_log_level=<int (InfoLogLevel)>] 
+  restore [--backup_env_uri]  [--backup_dir]  [--num_threads]  [--stderr_log_level=<int (InfoLogLevel)>] 
+  checkpoint [--checkpoint_dir] 
+  write_extern_sst <output_sst_path>
+  ingest_extern_sst <input_sst_path> [--move_files]  [--snapshot_consistency]  [--allow_global_seqno]  [--allow_blocking_flush]  [--ingest_behind]  [--write_global_seqno] 
+  unsafe_remove_sst_file <SST file number>
+    MUST NOT be used on a live DB.
+
+==== Public Interface
+
+https://github.com/facebook/rocksdb/tree/main/include/rocksdb
+
+Callers should not include or rely on the details of any other header files in RocksDB package.
+
+==== Opening A Database
+
+#include "rocksdb/db.h"
+
+  rocksdb::DB* db;
+  rocksdb::Options options;
+  options.create_if_missing = true;
+  std::string dbname = "/tmp/testdb";     // RocksDB database name corresponds to a file system directory
+  rocksdb::Status status = rocksdb::DB::Open(options, dbname, &db);
+
+==== DBOptions
+
+RocksDB automatically keeps options used in the database in OPTIONS-xxxx files under the DB directory.
+
+# rocksdb/include/rocksdb/options.h
+Can set options fields explicitly in code
+Can also set it through a string to string map, or an option string
+
+https://github.com/facebook/rocksdb/wiki/Option-String-and-Option-Map
+https://github.com/facebook/rocksdb/wiki/RocksDB-Options-File
+
+==== Environment and SpdkEnv
+
+All file operations (and other operating system calls) issued by the rocksdb implementation are routed through a rocksdb::Env object.
+
+# The following is declared in RocksDB repo rocksdb/include/rocksdb/env.h,
+# and implemented in SPDK repo spdk/lib/rocksdb/env_spdk.cc
+// Returns a new environment that is used for SPDK environment.
+// Caller saves the spdk env in DBOptions:env and passes the DBOptions to rocksdb::DB::Open call.
+Env* NewSpdkEnv(Env* base_env, const std::string& fsname, const std::string& confname,
+                const std::string& bdevname, uint64_t cache_size_in_mb);
+// Initializes a thread for SpdkEnv processing.
+// Invoked in rocksdb/util/threadpool_imp.cc
+void SpdkInitializeThread(void);
+
+
+==== Compile on Linux
+
+Required Libraries:
+gflags 2.0+ (required for testing and benchmark code)
+zlib 1.2.8+ (optional)
+bzip2 1.0.6+ (optional)
+lz4 r131+ (optional)
+snappy 1.1.3+ (optional)
+zstandard 0.5.1+ (optional)
+
+Architecture: x86 / x86_64 / arm64 / ppc64le / s390x
+C/C++ Compiler: GCC 4.8+ or Clang
+Tools: GNU Make or CMake 3.14.5+
+
+Upgrade your gcc to version at least 4.8 to get C++11 support.
+
+CGO_LDFLAGS="-L/usr/local/lib -lrocksdb -lzstd"
+or
+ROCKSDB_DISABLE_ZSTD
+
+====
+
+rocksdb/make_config.mk:
+PLATFORM_LDFLAGS= -lpthread -lrt -ldl -lsnappy -lgflags -lz -lbz2 -llz4 -lzstd -lnuma
+
+build_tools/build_detect_platform:
+# The output will set the following variables:
+#   CC                          C Compiler path
+#   CXX                         C++ Compiler path
+#   PLATFORM_LDFLAGS            Linker flags
+#   JAVA_LDFLAGS                Linker flags for RocksDBJava
+#   JAVA_STATIC_LDFLAGS         Linker flags for RocksDBJava static build
+#   JAVAC_ARGS                  Arguments for javac
+#   PLATFORM_SHARED_EXT         Extension for shared libraries
+#   PLATFORM_SHARED_LDFLAGS     Flags for building shared library
+#   PLATFORM_SHARED_CFLAGS      Flags for compiling objects for shared library
+#   PLATFORM_CCFLAGS            C compiler flags
+#   PLATFORM_CXXFLAGS           C++ compiler flags.  Will contain:
+#   PLATFORM_SHARED_VERSIONED   Set to 'true' if platform supports versioned
+#                               shared libraries, empty otherwise.
+#   FIND			Command for the find utility
+#   WATCH			Command for the watch utility
+#
+# The PLATFORM_CCFLAGS and PLATFORM_CXXFLAGS might include the following:
+#
+#       -DROCKSDB_PLATFORM_POSIX    if posix-platform based
+#       -DSNAPPY                    if the Snappy library is present
+#       -DLZ4                       if the LZ4 library is present
+#       -DZSTD                      if the ZSTD library is present
+#       -DNUMA                      if the NUMA library is present
+#       -DTBB                       if the TBB library is present
+#       -DMEMKIND                   if the memkind library is present
+#
+# Using gflags in rocksdb:
+# Our project depends on gflags, which requires users to take some extra steps
+# before they can compile the whole repository:
+#   1. Install gflags. You may download it from here:
+#      https://gflags.github.io/gflags/ (Mac users can `brew install gflags`)
+#   2. Once installed, add the include path for gflags to your CPATH env var and
+#      the lib path to LIBRARY_PATH. If installed with default settings, the lib
+#      will be /usr/local/lib and the include path will be /usr/local/include
+
+
+==== https://github.com/facebook/rocksdb/blob/main/INSTALL.md
+
+Default make or make all: compile RocksDB in debug mode
+
+make static_lib will compile librocksdb.a, RocksDB static library. Compiles static library in release mode.
+make shared_lib will compile librocksdb.so, RocksDB shared library. Compiles shared library in release mode.
+make check will compile and run all the unit tests. make check will compile RocksDB in debug mode.
+make all will compile our static library, and all our tools and unit tests.
+
+==== Debian 4.19.67-2+deb10u2
+
+$ make -v
+GNU Make 4.2.1
+Built for x86_64-pc-linux-gnu
+Copyright (C) 1988-2016 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+
+$ cc -v
+Using built-in specs.
+COLLECT_GCC=cc
+COLLECT_LTO_WRAPPER=/usr/lib/gcc/x86_64-linux-gnu/8/lto-wrapper
+OFFLOAD_TARGET_NAMES=nvptx-none
+OFFLOAD_TARGET_DEFAULT=1
+Target: x86_64-linux-gnu
+Configured with: ../src/configure -v --with-pkgversion='Debian 8.3.0-6' --with-bugurl=file:///usr/share/doc/gcc-8/README.Bugs --enable-languages=c,ada,c++,go,brig,d,fortran,objc,obj-c++ --prefix=/usr --with-gcc-major-version-only --program-suffix=-8 --program-prefix=x86_64-linux-gnu- --enable-shared --enable-linker-build-id --libexecdir=/usr/lib --without-included-gettext --enable-threads=posix --libdir=/usr/lib --enable-nls --enable-bootstrap --enable-clocale=gnu --enable-libstdcxx-debug --enable-libstdcxx-time=yes --with-default-libstdcxx-abi=new --enable-gnu-unique-object --disable-vtable-verify --enable-libmpx --enable-plugin --enable-default-pie --with-system-zlib --with-target-system-zlib --enable-objc-gc=auto --enable-multiarch --disable-werror --with-arch-32=i686 --with-abi=m64 --with-multilib-list=m32,m64,mx32 --enable-multilib --with-tune=generic --enable-offload-targets=nvptx-none --without-cuda-driver --enable-checking=release --build=x86_64-linux-gnu --host=x86_64-linux-gnu --target=x86_64-linux-gnu
+Thread model: posix
+gcc version 8.3.0 (Debian 8.3.0-6) 
+
+$ g++ -v
+Using built-in specs.
+COLLECT_GCC=g++
+COLLECT_LTO_WRAPPER=/usr/lib/gcc/x86_64-linux-gnu/8/lto-wrapper
+OFFLOAD_TARGET_NAMES=nvptx-none
+OFFLOAD_TARGET_DEFAULT=1
+Target: x86_64-linux-gnu
+Configured with: ../src/configure -v --with-pkgversion='Debian 8.3.0-6' --with-bugurl=file:///usr/share/doc/gcc-8/README.Bugs --enable-languages=c,ada,c++,go,brig,d,fortran,objc,obj-c++ --prefix=/usr --with-gcc-major-version-only --program-suffix=-8 --program-prefix=x86_64-linux-gnu- --enable-shared --enable-linker-build-id --libexecdir=/usr/lib --without-included-gettext --enable-threads=posix --libdir=/usr/lib --enable-nls --enable-bootstrap --enable-clocale=gnu --enable-libstdcxx-debug --enable-libstdcxx-time=yes --with-default-libstdcxx-abi=new --enable-gnu-unique-object --disable-vtable-verify --enable-libmpx --enable-plugin --enable-default-pie --with-system-zlib --with-target-system-zlib --enable-objc-gc=auto --enable-multiarch --disable-werror --with-arch-32=i686 --with-abi=m64 --with-multilib-list=m32,m64,mx32 --enable-multilib --with-tune=generic --enable-offload-targets=nvptx-none --without-cuda-driver --enable-checking=release --build=x86_64-linux-gnu --host=x86_64-linux-gnu --target=x86_64-linux-gnu
+Thread model: posix
+gcc version 8.3.0 (Debian 8.3.0-6) 
+
+$ gcc -v
+Using built-in specs.
+COLLECT_GCC=gcc
+COLLECT_LTO_WRAPPER=/usr/lib/gcc/x86_64-linux-gnu/8/lto-wrapper
+OFFLOAD_TARGET_NAMES=nvptx-none
+OFFLOAD_TARGET_DEFAULT=1
+Target: x86_64-linux-gnu
+Configured with: ../src/configure -v --with-pkgversion='Debian 8.3.0-6' --with-bugurl=file:///usr/share/doc/gcc-8/README.Bugs --enable-languages=c,ada,c++,go,brig,d,fortran,objc,obj-c++ --prefix=/usr --with-gcc-major-version-only --program-suffix=-8 --program-prefix=x86_64-linux-gnu- --enable-shared --enable-linker-build-id --libexecdir=/usr/lib --without-included-gettext --enable-threads=posix --libdir=/usr/lib --enable-nls --enable-bootstrap --enable-clocale=gnu --enable-libstdcxx-debug --enable-libstdcxx-time=yes --with-default-libstdcxx-abi=new --enable-gnu-unique-object --disable-vtable-verify --enable-libmpx --enable-plugin --enable-default-pie --with-system-zlib --with-target-system-zlib --enable-objc-gc=auto --enable-multiarch --disable-werror --with-arch-32=i686 --with-abi=m64 --with-multilib-list=m32,m64,mx32 --enable-multilib --with-tune=generic --enable-offload-targets=nvptx-none --without-cuda-driver --enable-checking=release --build=x86_64-linux-gnu --host=x86_64-linux-gnu --target=x86_64-linux-gnu
+Thread model: posix
+gcc version 8.3.0 (Debian 8.3.0-6) 
+
+$ clang++ -v
+clang version 7.0.1-8+deb10u2 (tags/RELEASE_701/final)
+Target: x86_64-pc-linux-gnu
+Thread model: posix
+InstalledDir: /usr/bin
+Found candidate GCC installation: /usr/bin/../lib/gcc/x86_64-linux-gnu/8
+Found candidate GCC installation: /usr/lib/gcc/x86_64-linux-gnu/8
+Selected GCC installation: /usr/bin/../lib/gcc/x86_64-linux-gnu/8
+Candidate multilib: .;@m64
+Selected multilib: .;@m64
+
+
+sudo apt install libgflags-dev
+sudo apt install libsnappy-dev
+sudo apt install zlib1g-dev
+sudo apt install libbz2-dev
+sudo apt install liblz4-dev
+sudo apt install libzstd-dev
+
+$ ls /usr/lib/x86_64-linux-gnu/libgflags*
+/usr/lib/x86_64-linux-gnu/libgflags.a	    /usr/lib/x86_64-linux-gnu/libgflags.so.2.2.2      /usr/lib/x86_64-linux-gnu/libgflags_nothreads.so.2.2
+/usr/lib/x86_64-linux-gnu/libgflags.so	    /usr/lib/x86_64-linux-gnu/libgflags_nothreads.a   /usr/lib/x86_64-linux-gnu/libgflags_nothreads.so.2.2.2
+/usr/lib/x86_64-linux-gnu/libgflags.so.2.2  /usr/lib/x86_64-linux-gnu/libgflags_nothreads.so
+
+$ ls /usr/lib/x86_64-linux-gnu/libz.**
+/usr/lib/x86_64-linux-gnu/libz.a  /usr/lib/x86_64-linux-gnu/libz.so
+ 
+$ ls /usr/lib/x86_64-linux-gnu/liblz4*
+/usr/lib/x86_64-linux-gnu/liblz4.a  /usr/lib/x86_64-linux-gnu/liblz4.so  /usr/lib/x86_64-linux-gnu/liblz4.so.1	/usr/lib/x86_64-linux-gnu/liblz4.so.1.8.3
+
+$ ls /usr/lib/x86_64-linux-gnu/libsnappy*
+/usr/lib/x86_64-linux-gnu/libsnappy-shared.a  /usr/lib/x86_64-linux-gnu/libsnappy.so	/usr/lib/x86_64-linux-gnu/libsnappy.so.1.1.7
+/usr/lib/x86_64-linux-gnu/libsnappy.a	      /usr/lib/x86_64-linux-gnu/libsnappy.so.1
+
+$ ls /usr/lib/x86_64-linux-gnu/libzstd*
+/usr/lib/x86_64-linux-gnu/libzstd.a  /usr/lib/x86_64-linux-gnu/libzstd.so  /usr/lib/x86_64-linux-gnu/libzstd.so.1  /usr/lib/x86_64-linux-gnu/libzstd.so.1.3.8
+
+# In rocksdb directory
+$ build_tools/build_detect_platform ~/rocksdb_detected_platform.txt
+$ cat ~/rocksdb_detected_platform.txt
+CC=cc
+CXX=g++
+AR=gcc-ar
+PLATFORM=OS_LINUX
+PLATFORM_LDFLAGS= -lpthread -lrt -ldl -lsnappy -lgflags -lz -lbz2 -llz4 -lzstd -lnuma
+JAVA_LDFLAGS= -lpthread -lrt -ldl -lsnappy -lz -lbz2 -llz4 -lzstd -lnuma
+JAVA_STATIC_LDFLAGS= -lpthread -lrt -ldl
+JAVAC_ARGS=-source 7
+VALGRIND_VER=
+PLATFORM_CCFLAGS= -DROCKSDB_PLATFORM_POSIX -DROCKSDB_LIB_IO_POSIX  -DOS_LINUX -fno-builtin-memcmp -DROCKSDB_FALLOCATE_PRESENT -DSNAPPY -DGFLAGS=1 -DZLIB -DBZIP2 -DLZ4 -DZSTD -DNUMA -DROCKSDB_MALLOC_USABLE_SIZE -DROCKSDB_PTHREAD_ADAPTIVE_MUTEX -DROCKSDB_BACKTRACE -DROCKSDB_RANGESYNC_PRESENT -DROCKSDB_SCHED_GETCPU_PRESENT -DROCKSDB_AUXV_GETAUXVAL_PRESENT -march=native   -DHAVE_SSE42  -DHAVE_PCLMUL  -DHAVE_AVX2  -DHAVE_BMI  -DHAVE_LZCNT -DHAVE_UINT128_EXTENSION -DROCKSDB_SUPPORT_THREAD_LOCAL
+PLATFORM_CXXFLAGS=-std=c++11  -faligned-new -DHAVE_ALIGNED_NEW -DROCKSDB_PLATFORM_POSIX -DROCKSDB_LIB_IO_POSIX  -DOS_LINUX -fno-builtin-memcmp -DROCKSDB_FALLOCATE_PRESENT -DSNAPPY -DGFLAGS=1 -DZLIB -DBZIP2 -DLZ4 -DZSTD -DNUMA -DROCKSDB_MALLOC_USABLE_SIZE -DROCKSDB_PTHREAD_ADAPTIVE_MUTEX -DROCKSDB_BACKTRACE -DROCKSDB_RANGESYNC_PRESENT -DROCKSDB_SCHED_GETCPU_PRESENT -DROCKSDB_AUXV_GETAUXVAL_PRESENT -march=native   -DHAVE_SSE42  -DHAVE_PCLMUL  -DHAVE_AVX2  -DHAVE_BMI  -DHAVE_LZCNT -DHAVE_UINT128_EXTENSION -DROCKSDB_SUPPORT_THREAD_LOCAL
+PLATFORM_SHARED_CFLAGS=-fPIC
+PLATFORM_SHARED_EXT=so
+PLATFORM_SHARED_LDFLAGS=-Wl,--no-as-needed -shared -Wl,-soname -Wl,
+PLATFORM_SHARED_VERSIONED=true
+EXEC_LDFLAGS=-ldl
+JEMALLOC_INCLUDE=
+JEMALLOC_LIB=
+ROCKSDB_MAJOR=6
+ROCKSDB_MINOR=15
+ROCKSDB_PATCH=5
+CLANG_SCAN_BUILD=scan-build
+CLANG_ANALYZER=/usr/bin/clang++
+PROFILING_FLAGS=-pg
+FIND=find
+WATCH=watch
+LUA_PATH=
+USE_FOLLY_DISTRIBUTED_MUTEX=1
+
+$ grep DISABLE build_tools/build_detect_platform 
+    if ! test $ROCKSDB_DISABLE_FALLOCATE; then
+    if ! test $ROCKSDB_DISABLE_SNAPPY; then
+    if ! test $ROCKSDB_DISABLE_GFLAGS; then
+    if ! test $ROCKSDB_DISABLE_ZLIB; then
+    if ! test $ROCKSDB_DISABLE_BZIP; then
+    if ! test $ROCKSDB_DISABLE_LZ4; then
+    if ! test $ROCKSDB_DISABLE_ZSTD; then
+    if ! test $ROCKSDB_DISABLE_NUMA; then
+    if ! test $ROCKSDB_DISABLE_TBB; then
+    if ! test $ROCKSDB_DISABLE_JEMALLOC; then
+    if ! test $JEMALLOC && ! test $ROCKSDB_DISABLE_TCMALLOC; then
+    if ! test $ROCKSDB_DISABLE_MALLOC_USABLE_SIZE; then
+    if ! test $ROCKSDB_DISABLE_MEMKIND; then
+    if ! test $ROCKSDB_DISABLE_PTHREAD_MUTEX_ADAPTIVE_NP; then
+    if ! test $ROCKSDB_DISABLE_BACKTRACE; then
+    if ! test $ROCKSDB_DISABLE_PG; then
+    if ! test $ROCKSDB_DISABLE_SYNC_FILE_RANGE; then
+    if ! test $ROCKSDB_DISABLE_SCHED_GETCPU; then
+    if ! test $ROCKSDB_DISABLE_AUXV_GETAUXVAL; then
+    if ! test $ROCKSDB_DISABLE_ALIGNED_NEW; then
+
+# rocksdb/Makefile: run build_detect_platform to generate make_config.mk and then include make_config.mk
+# PLATFORM_LDFLAGS is then added to LDFLAGS
+$ grep build_detect_platform Makefile 
+                  "$(CURDIR)/build_tools/build_detect_platform" "$(CURDIR)/make_config.mk"))
+
+$ grep make_config.mk Makefile
+                  "$(CURDIR)/build_tools/build_detect_platform" "$(CURDIR)/make_config.mk"))
+include make_config.mk
+CLEAN_FILES += make_config.mk rocksdb.pc
+	grep "\./\S*\|/\S*" -o $(CURDIR)/make_config.mk | 	\
+
+$ grep PLATFORM_LDFLAGS Makefile 
+		PLATFORM_LDFLAGS += -ljemalloc
+LDFLAGS += $(PLATFORM_LDFLAGS)
+	-echo 'Libs.private: $(PLATFORM_LDFLAGS)' >> rocksdb.pc
+  
